@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
-import { saveToken } from "../utils/auth";
+import { saveToken } from "@/utils/auth";
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
