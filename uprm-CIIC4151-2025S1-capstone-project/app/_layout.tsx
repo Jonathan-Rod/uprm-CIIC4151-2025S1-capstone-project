@@ -3,22 +3,20 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
-// import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useColorScheme } from "../hooks/use-color-scheme"; // modified
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
-// import { getToken } from "@/utils/auth";
-import { getToken } from "../utils/auth"; // modified
+import { getToken } from "@/utils/auth";
 
-import { paperLightTheme, paperDarkTheme } from "../theme/paper-theme";
+import { paperLightTheme, paperDarkTheme } from "@/theme/paper-theme";
 import {
   navigationLightTheme,
   navigationDarkTheme,
-} from "../theme/navigation-theme";
+} from "@/theme/navigation-theme";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -47,6 +45,7 @@ export default function RootLayout() {
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navigationTheme}>
           <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} /> {/* hide header on login */}
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="modal"

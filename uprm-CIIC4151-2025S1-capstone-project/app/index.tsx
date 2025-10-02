@@ -2,8 +2,7 @@ import { useState } from "react";
 import { View } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
-// import LoginForm from "@/components/LoginForm";
-import LoginForm from "../components/LoginForm"; // modified
+import LoginForm from "@/components/LoginForm";
 
 
 export default function SignScreen() {
