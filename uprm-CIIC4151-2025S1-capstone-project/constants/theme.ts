@@ -18,6 +18,7 @@ export const Colors = {
     alert: '#D00000',
     success: '#2D6A4F',
     card: '#FFFFFF',
+    muted: '#6C757D',
   },
   dark: {
     text: '#E9ECEF',
@@ -29,6 +30,7 @@ export const Colors = {
     alert: '#FF6B6B',
     success: '#95D5B2',
     card: '#1F1F1F',
+    muted: '#ADB5BD',
   },
 };
 
