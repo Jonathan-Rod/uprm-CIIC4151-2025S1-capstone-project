@@ -1,10 +1,7 @@
 import { View } from "react-native";
 import { Text } from "react-native-paper";
 
-export default function ProfileScreen() {
-  //TODO: Show user profile information and analytics. Show his reports (sorted by date, most recent first). Change information
-
-
+export default function ReportCard() {
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <Text variant="headlineMedium">Profile</Text>
