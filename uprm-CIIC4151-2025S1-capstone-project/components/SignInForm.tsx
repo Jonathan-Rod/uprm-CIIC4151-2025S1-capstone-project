@@ -1,3 +1,6 @@
+// TODO
+// Add a confirmation email functionality (maybe add a confirmation code page)
+
 import { useState } from "react";
 import { View } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
