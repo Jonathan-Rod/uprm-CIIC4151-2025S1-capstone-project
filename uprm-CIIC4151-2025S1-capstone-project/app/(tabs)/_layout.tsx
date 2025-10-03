@@ -3,6 +3,7 @@ import React from "react";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+
 import { Colors } from "@/constants/theme";
 
 export default function TabLayout() {
