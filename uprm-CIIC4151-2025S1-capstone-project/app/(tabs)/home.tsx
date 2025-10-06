@@ -12,7 +12,7 @@ export default function HomeScreen() {
         icon="plus"
         label="Add"
         onPress={() => {
-          router.push("/report-form-modal");
+          router.push("/report-form");
         }}
       />
     </View>

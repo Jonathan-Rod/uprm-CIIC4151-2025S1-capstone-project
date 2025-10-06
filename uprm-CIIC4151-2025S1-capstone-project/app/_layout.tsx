@@ -54,7 +54,7 @@ export default function RootLayout() {
               options={{ presentation: "modal", title: "Modal" }}
             />
             <Stack.Screen
-              name="(modals)/report-form-modal"
+              name="(modals)/report-form"
               options={{ presentation: "modal", title: "Report Forms" }}
             />
           </Stack>
