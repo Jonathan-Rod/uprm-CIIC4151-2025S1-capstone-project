@@ -1,35 +1,40 @@
 import { View, StyleSheet } from "react-native";
 import { TextInput, Button, Text, SegmentedButtons } from "react-native-paper";
 import { useState } from "react";
+import { ReportData } from "@/mocks/mockReports";
 
 export default function ReportForm({
   onSubmit,
 }: {
-  onSubmit?: (data: any) => void;
+  onSubmit?: (data: ReportData) => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   // TODO: #32 Replace with date picker
-  const [lastSeen, setLastSeen] = useState(new Date().toISOString());
+  const [ocurredOn, setOcurredOn] = useState(new Date());
   const [department, setDepartment] = useState("");
 
   const isFormValid = () => {
     return (
       title.trim() !== "" &&
       description.trim() !== "" &&
-      lastSeen.trim() !== "" &&
+      ocurredOn instanceof Date &&
       department.trim() !== ""
     );
   };
 
   const handleSubmit = () => {
-    const reportData = {
+    const reportData: ReportData = {
       title,
       description,
-      lastSeen,
-      department,
-      status: "open",
-      created_at: new Date().toISOString(),
+      ocurredOn: ocurredOn,
+      department: department as
+        | "infrastructure"
+        | "energy_water"
+        | "sanitation"
+        | "environment_security",
+      status: "created",
+      createdAt: new Date(),
     };
     if (onSubmit) onSubmit(reportData);
   };
@@ -48,12 +53,13 @@ export default function ReportForm({
       />
       <TextInput
         label="Occurred On"
-        value={lastSeen}
-        onChangeText={setLastSeen}
+        value={ocurredOn.toISOString()} // ISO string for now
+        onChangeText={(value) => setOcurredOn(new Date(value))}
         mode="outlined"
         style={styles.input}
       />
       <SegmentedButtons
+        density="small"
         value={department}
         onValueChange={setDepartment}
         buttons={[

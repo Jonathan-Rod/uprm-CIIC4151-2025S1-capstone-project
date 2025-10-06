@@ -1,11 +1,10 @@
 // This is a mock list of reports
 // It can add more reports after submissions
 
-interface ReportData {
+export interface ReportData {
   title: string;
   description: string;
-  date: string;
-  lastSeen: string;
+  ocurredOn: Date;
   department:
     | "infrastructure"
     | "energy_water"
@@ -13,7 +12,7 @@ interface ReportData {
     | "environment_security";
 
   status: "created" | "in_review" | "open" | "in_progress" | "closed";
-  created_at: string;
+  createdAt: Date;
 }
 
 const mockReport: Record<string, ReportData> = {
@@ -21,20 +20,18 @@ const mockReport: Record<string, ReportData> = {
     title: "Pothole on Main St",
     description:
       "There's a large pothole on Main St near the intersection with 2nd Ave.",
-    date: "2023-10-01",
-    lastSeen: "2023-10-02",
+    ocurredOn: new Date("2023-10-01T12:00:00Z"),
     department: "infrastructure",
     status: "open",
-    created_at: "2023-10-01T12:00:00Z",
+    createdAt: new Date("2023-10-01T12:00:00Z"),
   },
   "report-2": {
     title: "Streetlight Out",
     description: "The streetlight in front of 123 Elm St is not working.",
-    date: "2023-10-01",
-    lastSeen: "2023-10-02",
+    ocurredOn: new Date("2023-10-01T12:00:00Z"),
     department: "infrastructure",
     status: "closed",
-    created_at: "2023-10-01T12:00:00Z",
+    createdAt: new Date("2023-10-01T12:00:00Z"),
   },
 };
 

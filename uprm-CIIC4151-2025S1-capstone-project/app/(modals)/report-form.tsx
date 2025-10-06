@@ -7,8 +7,7 @@ export default function ReportFormModal() {
 
   const handleSubmit = (data: any) => {
     // TODO: Send 'data' to the backend API endpoint for report submission.
-    const uniqueId = `report-${Date.now()}`;
-    addReport(uniqueId, data);
+
     console.log("Report submitted:", data);
     router.back(); // or router.replace("/home") if needed
   };
