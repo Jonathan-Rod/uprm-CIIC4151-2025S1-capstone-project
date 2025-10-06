@@ -13,6 +13,15 @@ export default function ReportForm({
   const [lastSeen, setLastSeen] = useState(new Date().toISOString());
   const [department, setDepartment] = useState("");
 
+  const isFormValid = () => {
+    return (
+      title.trim() !== "" &&
+      description.trim() !== "" &&
+      lastSeen.trim() !== "" &&
+      department.trim() !== ""
+    );
+  };
+
   const handleSubmit = () => {
     const reportData = {
       title,
@@ -38,7 +47,7 @@ export default function ReportForm({
         style={styles.input}
       />
       <TextInput
-        label="Last Seen"
+        label="Occurred On"
         value={lastSeen}
         onChangeText={setLastSeen}
         mode="outlined"
@@ -79,7 +88,7 @@ export default function ReportForm({
         numberOfLines={4}
         style={styles.input}
       />
-      <Button mode="contained" onPress={handleSubmit}>
+      <Button mode="contained" onPress={handleSubmit} disabled={!isFormValid()}>
         Submit Report
       </Button>
     </View>
