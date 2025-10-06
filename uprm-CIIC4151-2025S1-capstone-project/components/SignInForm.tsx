@@ -8,7 +8,7 @@ export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
-  // Validation rules same as LoginForm
+  // Switched the validation from login to sign up
   const isEmailValid = validator.isEmail(email);
   const isPasswordValid = validator.isStrongPassword(password, {
     minLength: 8,
