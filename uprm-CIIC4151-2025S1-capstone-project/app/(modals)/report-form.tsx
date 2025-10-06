@@ -1,12 +1,14 @@
 import ReportForm from "@/components/ReportForm";
 import { useRouter } from "expo-router";
 import { View, StyleSheet } from "react-native";
-
+import { addReport } from "@/mocks/mockReports";
 export default function ReportFormModal() {
   const router = useRouter();
 
   const handleSubmit = (data: any) => {
     // TODO: Send 'data' to the backend API endpoint for report submission.
+    const uniqueId = `report-${Date.now()}`;
+    addReport(uniqueId, data);
     console.log("Report submitted:", data);
     router.back(); // or router.replace("/home") if needed
   };
@@ -22,7 +24,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    
   },
 });
 
