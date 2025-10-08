@@ -26,11 +26,25 @@ export const saveRole = async (role: "admin" | "civilian") => {
 };
 
 export const getRole = async (): Promise<"admin" | "civilian"> => {
-  if (Platform.OS === "web") {
-    return (localStorage.getItem(ROLE_KEY) as "admin" | "civilian") || "civilian";
-  } else {
-    const role = await SecureStore.getItemAsync(ROLE_KEY);
-    return (role as "admin" | "civilian") || "civilian";
+  try {
+    if (Platform.OS === "web") {
+      const role = localStorage.getItem(ROLE_KEY);
+      if (role) {
+        return role as "admin" | "civilian";
+      } else {
+        return "civilian";
+      }
+    } else {
+      const role = await SecureStore.getItemAsync(ROLE_KEY);
+      if (role) {
+        return role as "admin" | "civilian";
+      } else {
+        return "civilian";
+      }
+    }
+  } catch (error) {
+    console.error("Error retrieving role:", error);
+    return "civilian";
   }
 };
 
