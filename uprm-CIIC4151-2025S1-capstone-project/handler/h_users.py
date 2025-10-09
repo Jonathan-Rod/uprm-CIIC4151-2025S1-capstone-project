@@ -6,11 +6,11 @@ from utils.jwt_helper import create_token
 class UsersHandler:
 
     def map_to_dict(self, user):
-        # users table = id, email, position
+        # users table = id, email, admin
         return {
             "id": user[0],
             "email": user[1],
-            "position": user[2],
+            "admin": user[2],
         }
 
     def getAllUsers(self):
@@ -43,7 +43,7 @@ class UsersHandler:
         user_info = {
             "id": user[0],
             "email": user[1],
-            "position": user[3]  # assuming your user tuple = (id, email, password, position)
+            "admin": user[3]  # assuming your user tuple = (id, email, password, admin)
         }
 
         token = create_token(user_info["id"])
@@ -67,12 +67,12 @@ class UsersHandler:
         try:
             email = data["email"]
             password = data["password"]
-            position = data["position"]
+            admin = data["admin"]
         except KeyError as e:
             return jsonify({"error_msg": f"Missing field: {str(e)}"}), HTTP_STATUS.BAD_REQUEST
 
         dao = UsersDAO()
-        inserted_user = dao.insertUser(email, password, position)
+        inserted_user = dao.insertUser(email, password, admin)
 
         if not inserted_user:
             return jsonify({"error_msg": "User not inserted"}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -92,12 +92,12 @@ class UsersHandler:
 
         email = data.get("email")
         password = data.get("password")
-        position = data.get("position")
+        admin = data.get("admin")
 
-        if not all([email, password, position]):
+        if not all([email, password, admin]):
             return jsonify({"error_msg": "Missing required fields"}), HTTP_STATUS.BAD_REQUEST
 
-        updated_user = dao.updateUser(user_id, email, password, position)
+        updated_user = dao.updateUser(user_id, email, password, admin)
 
         if not updated_user:
             return jsonify({"error_msg": "User not updated"}), HTTP_STATUS.INTERNAL_SERVER_ERROR

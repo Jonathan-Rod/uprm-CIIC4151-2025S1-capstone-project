@@ -9,15 +9,21 @@
  * 4. Deleting data.
  * */
 
-const API_BASE_URL = "https://api.example.com"; // Replace with your actual API base URL
+import { getToken } from "@/utils/auth"; // Make sure the path is correct
 
-// Generic request wrapper
+const API_BASE_URL = "http://192.168.0.3:5000"; // Replace with your actual backend URL
+
+// Generic request wrapper with token support
 async function request(endpoint: string, method = "GET", body?: any) {
-  const headers = {
+  const token = await getToken();
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    // Add auth token if needed
-    // Authorization: `Bearer ${token}`,
   };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const options: RequestInit = {
     method,
@@ -56,3 +62,4 @@ export async function updateReport(id: number, data: any) {
 export async function deleteReport(id: number) {
   return request(`/reports/${id}`, "DELETE");
 }
+

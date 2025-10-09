@@ -3,13 +3,13 @@
 // AuthContext.tsx will fetch these tokens and fetch the user info to set the global state.
 
 import React, { createContext, ReactNode, useContext, useState, useEffect } from "react";
-import { saveToken, getToken, deleteToken, saveRole, getRole } from "@/utils/auth"; // adjust path if needed
+import { saveToken, getToken, deleteToken } from "@/utils/auth"; // Removed saveRole/getRole since admin is now boolean
 
-// User type
+// Updated User type to match backend schema
 type User = {
   id: number;
   email: string;
-  position: "civilian" | "admin";
+  admin: boolean; // true for admin, false for civilian
 };
 
 // Auth context type
@@ -63,7 +63,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(userData);
     if (token) {
       await saveToken(token);
-      await saveRole(userData.position);
     }
   };
 

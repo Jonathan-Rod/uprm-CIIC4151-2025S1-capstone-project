@@ -10,7 +10,7 @@ CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    admin BOOLEAN DEFAULT FALSE, -- verify syntax
+    admin BOOLEAN DEFAULT FALSE -- verify syntax
     -- suspended --
     -- pinned --
 );
@@ -46,7 +46,7 @@ CREATE TABLE reports (
     id SERIAL PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
-    status VARCHAR(10) CHECK (status IN ('resolved', 'denied', 'in_progress', 'open')) DEFAULT 'open',
+    status VARCHAR(20) CHECK (status IN ('resolved', 'denied', 'in_progress', 'open')) DEFAULT 'open',
     created_by INTEGER REFERENCES users(id) NOT NULL,
     validated_by INTEGER REFERENCES administrators(id),
     resolved_by INTEGER REFERENCES administrators(id),

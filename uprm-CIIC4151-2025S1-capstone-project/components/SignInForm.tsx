@@ -31,24 +31,18 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
       const response = await fetch("http://192.168.0.3:5000/registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          position: "civilian", // default for all new users
-        }),
+        body: JSON.stringify({ email, password, admin: false }), // default to civilian
       });
 
       const data = await response.json();
 
       if (response.ok && data.id) {
-        // Save token if backend returns one (optional)
         if (data.token) await saveToken(data.token);
 
-        // Update auth context with full user info
         login({
           id: data.id,
           email: data.email,
-          position: data.position,
+          admin: data.admin,
         });
 
         Alert.alert("Success", "Account created successfully!");
@@ -65,7 +59,6 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <View style={{ gap: 12 }}>
-      {/* Email */}
       <TextInput
         label="Email"
         value={email}
@@ -77,7 +70,6 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         Enter a valid email address
       </HelperText>
 
-      {/* Password */}
       <TextInput
         label="Password"
         value={password}
@@ -88,7 +80,6 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         Password must be 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol
       </HelperText>
 
-      {/* Confirm Password */}
       <TextInput
         label="Confirm Password"
         value={confirm}
@@ -99,10 +90,10 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         Passwords must match
       </HelperText>
 
-      {/* Submit */}
       <Button mode="contained" onPress={handleSignUp} disabled={hasErrors()}>
         Sign Up
       </Button>
     </View>
   );
 }
+

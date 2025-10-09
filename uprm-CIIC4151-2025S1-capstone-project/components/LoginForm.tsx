@@ -20,24 +20,19 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       const response = await fetch("http://192.168.0.3:5000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          position: "civilian", // default, or later allow selection
-        }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Optional: save token if backend returns one
         if (data.token) await saveToken(data.token);
 
-        // Update AuthContext with full user info (id, email, position)
+        // Update AuthContext with full user info (id, email, admin)
         login({
-          id: data.id, // Make sure your backend returns this
-          email: data.email,
-          position: data.position,
+          id: data.user.id,
+          email: data.user.email,
+          admin: data.user.admin,
         });
 
         onSuccess();
