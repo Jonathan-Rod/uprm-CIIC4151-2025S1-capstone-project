@@ -1,3 +1,5 @@
+// This file will store and handle the tokens created from the jwt_helper file.
+
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 

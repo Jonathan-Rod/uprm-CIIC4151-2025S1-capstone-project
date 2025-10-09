@@ -1,14 +1,19 @@
+// For some reason the email/password validator was in the login page. Changed it so that it works only in the register page.
+
 import { useState } from "react";
 import { View, Alert } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
 import validator from "validator";
+import { useAuth } from "@/context/AuthContext";
+import { saveToken } from "@/utils/auth";
 
-export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
+export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const { login } = useAuth();
 
-  // Switched the validation from login to sign up
+  // Validation
   const isEmailValid = validator.isEmail(email);
   const isPasswordValid = validator.isStrongPassword(password, {
     minLength: 8,
@@ -17,35 +22,43 @@ export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
     minNumbers: 1,
     minSymbols: 1,
   });
-
   const hasErrors = () => !isEmailValid || !isPasswordValid || password !== confirm;
 
   const handleSignUp = async () => {
     if (hasErrors()) return;
 
     try {
-      const response = await fetch("http://192.168.4.29:5000/registration", {
+      const response = await fetch("http://192.168.0.3:5000/registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: email, // match UsersHandler
-          password,
-          position: "civilian", // default
           email,
+          password,
+          position: "civilian", // default for all new users
         }),
       });
 
       const data = await response.json();
 
-      if (data.id) {
+      if (response.ok && data.id) {
+        // Save token if backend returns one (optional)
+        if (data.token) await saveToken(data.token);
+
+        // Update auth context with full user info
+        login({
+          id: data.id,
+          email: data.email,
+          position: data.position,
+        });
+
         Alert.alert("Success", "Account created successfully!");
         onSuccess();
       } else {
-        Alert.alert("Error", "Failed to create account");
+        Alert.alert("Error", data.error_msg || "Failed to create account");
         console.error("Sign-up response:", data);
       }
     } catch (error) {
-      console.error("Sign up error:", error);
+      console.error("Sign-up error:", error);
       Alert.alert("Connection Error", "Could not connect to the server.");
     }
   };

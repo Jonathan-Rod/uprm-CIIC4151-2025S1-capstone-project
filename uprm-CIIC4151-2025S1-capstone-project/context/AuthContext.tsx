@@ -1,35 +1,90 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+// jwt helper file will generate the tokens
+// auth.ts (in utils folder) will securly store these tokens
+// AuthContext.tsx will fetch these tokens and fetch the user info to set the global state.
 
+import React, { createContext, ReactNode, useContext, useState, useEffect } from "react";
+import { saveToken, getToken, deleteToken, saveRole, getRole } from "@/utils/auth"; // adjust path if needed
+
+// User type
 type User = {
-  username: string;
-  position: string;
+  id: number;
+  email: string;
+  position: "civilian" | "admin";
 };
 
+// Auth context type
 type AuthContextType = {
   user: User | null;
-  login: (userData: User) => void;
-  logout: () => void;
+  loading: boolean;
+  login: (userData: User, token?: string) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
+// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Provider
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (userData: User) => setUser(userData);
-  const logout = () => setUser(null);
+  // Load user from stored token on app start
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = await getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("http://192.168.0.3:5000/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const userData: User = await response.json();
+          setUser(userData);
+        } else {
+          await deleteToken(); // token invalid
+        }
+      } catch (err) {
+        console.error("Error loading user:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // Login
+  const login = async (userData: User, token?: string) => {
+    setUser(userData);
+    if (token) {
+      await saveToken(token);
+      await saveRole(userData.position);
+    }
+  };
+
+  // Logout
+  const logout = async () => {
+    setUser(null);
+    await deleteToken();
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Hook to use context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

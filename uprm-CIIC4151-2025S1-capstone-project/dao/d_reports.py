@@ -1,11 +1,8 @@
-# TODO
-
 from dotenv import load_dotenv
 from load import load_db
 
 
 class ReportsDAO:
-
     def __init__(self):
         load_dotenv()
         self.conn = load_db()
@@ -22,39 +19,42 @@ class ReportsDAO:
             cur.execute(query, (report_id,))
             return cur.fetchone()
 
-    def insertReport(self, title, description, status, created_by, validated_by, resolved_by, created_at, resolved_at, location, image_url, rating):
+    def insertReport(self, title, description, created_by):
         query = """
-            SELECT setval('reports_id_seq', (SELECT MAX(id) FROM reports), true);
-            INSERT INTO reports (title, description, status, created_by, validated_by, resolved_by, created_at, resolved_at, location, image_url, rating)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO reports (title, description, created_by)
+            VALUES (%s, %s, %s)
             RETURNING id, title, description, status, created_by, validated_by, resolved_by, created_at, resolved_at, location, image_url, rating;
         """
-
         with self.conn.cursor() as cur:
-            cur.execute(query, (title, description, status, created_by, validated_by, resolved_by, created_at, resolved_at, location, image_url, rating))
+            cur.execute(query, (title, description, created_by))
             self.conn.commit()
             return cur.fetchone()
 
-    def updateReport(self, report_id, status, rating):
+
+    def updateReport(self, report_id, status=None, rating=None):
+        """
+        Update report fields that are allowed to change (status or rating).
+        """
         query = """
             UPDATE reports
-            SET status = %s, rating = %s 
+            SET status = COALESCE(%s, status),
+                rating = COALESCE(%s, rating)
             WHERE id = %s
-            RETURNING id, title, description, status, created_by, validated_by, resolved_by, created_at, resolved_at, location, image_url, rating;
+            RETURNING id, title, description, status, created_by, validated_by, resolved_by,
+                      created_at, resolved_at, location, image_url, rating;
         """
-        values = (status, rating, report_id)
 
         with self.conn.cursor() as cur:
-            cur.execute(query, values)
+            cur.execute(query, (status, rating, report_id))
             self.conn.commit()
             return cur.fetchone()
 
     def deleteReport(self, report_id):
         query = """
             DELETE FROM reports WHERE id = %s
-            RETURNING id, title, description, status, created_by, validated_by, resolved_by, created_at, resolved_at, location, image_url, rating;
-            """
-
+            RETURNING id, title, description, status, created_by, validated_by, resolved_by,
+                      created_at, resolved_at, location, image_url, rating;
+        """
         with self.conn.cursor() as cur:
             cur.execute(query, (report_id,))
             self.conn.commit()

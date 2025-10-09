@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Alert } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
 import { useAuth } from "@/context/AuthContext";
+import { saveToken } from "@/utils/auth";
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -16,24 +17,32 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.4.29:5000/login", {
+      const response = await fetch("http://192.168.0.3:5000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: email, // backend expects username field
-          password,
-          position: "civilian", // default
           email,
+          password,
+          position: "civilian", // default, or later allow selection
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        login({ username: email, position: "civilian" });
+        // Optional: save token if backend returns one
+        if (data.token) await saveToken(data.token);
+
+        // Update AuthContext with full user info (id, email, position)
+        login({
+          id: data.id, // Make sure your backend returns this
+          email: data.email,
+          position: data.position,
+        });
+
         onSuccess();
       } else {
-        Alert.alert("Invalid Credentials", "Please check your login details.");
+        Alert.alert("Invalid Credentials", data.error_msg || "Check your login details.");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -52,13 +61,23 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         autoCapitalize="none"
         keyboardType="email-address"
       />
+      <HelperText type="error" visible={email.length > 0 && !email.includes("@")}>
+        Enter a valid email address
+      </HelperText>
+
       <TextInput
         label="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
-      <Button mode="contained" onPress={handleLogin} disabled={hasErrors() || loading} loading={loading}>
+
+      <Button
+        mode="contained"
+        onPress={handleLogin}
+        disabled={hasErrors() || loading}
+        loading={loading}
+      >
         Log In
       </Button>
     </View>

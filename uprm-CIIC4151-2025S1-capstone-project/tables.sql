@@ -1,22 +1,33 @@
+-- Notes: username removed from users table (replaced it with email).
+-- verifications table can be ignored for now (will be used later for email code verification).
+-- civilians table needs to go? maybe. Since every user will be a civilian by default (later can be upgraded to administrator).
+-- if civilians table gets removed, then it's important to add the suspended attribute to users table.
+-- in the reports table, changed the reference (from the created_by) to users_id instead of civilians.
+
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     position VARCHAR(13) CHECK (position IN ('civilian', 'administrator')),
-    email VARCHAR(50) UNIQUE NOT NULL
+    -- suspended --
 );
 
+-- Ignore --
 CREATE TABLE verifications (
     id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,
     code VARCHAR(6) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Ignore --
 
+-- Removal Pending --
 CREATE TABLE civilians (
     id INTEGER PRIMARY KEY REFERENCES users(id),
     suspended BOOLEAN DEFAULT FALSE
 );
+-- Removal Pending --
 
 CREATE TABLE administrators (
     id INTEGER PRIMARY KEY REFERENCES users(id),
@@ -32,9 +43,9 @@ CREATE TABLE location (
 CREATE TABLE reports (
     id SERIAL PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
-    description TEXT,
+    description TEXT NOT NULL,
     status VARCHAR(10) CHECK (status IN ('resolved', 'denied', 'in_progress', 'open')) DEFAULT 'open',
-    created_by INTEGER REFERENCES civilians(id) NOT NULL,
+    created_by INTEGER REFERENCES users(id) NOT NULL,
     validated_by INTEGER REFERENCES administrators(id),
     resolved_by INTEGER REFERENCES administrators(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
