@@ -3,14 +3,16 @@
 -- civilians table needs to go? maybe. Since every user will be a civilian by default (later can be upgraded to administrator).
 -- if civilians table gets removed, then it's important to add the suspended attribute to users table.
 -- in the reports table, changed the reference (from the created_by) to users_id instead of civilians.
+-- create a category attribute? yes or no?
 
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    position VARCHAR(13) CHECK (position IN ('civilian', 'administrator')),
+    admin BOOLEAN DEFAULT FALSE, -- verify syntax
     -- suspended --
+    -- pinned --
 );
 
 -- Ignore --
@@ -53,6 +55,7 @@ CREATE TABLE reports (
     location INTEGER REFERENCES location(id),
     image_url TEXT,
     rating INTEGER
+    -- category --
 );
 
 CREATE TABLE department_admins (

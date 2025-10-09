@@ -51,8 +51,8 @@ function AppContent() {
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navigationTheme}>
           <Stack>
-            <Stack.Screen name="sign-screen" options={{ headerShown: false }} />
-            {/* <Stack.Screen name="index" options={{ headerShown: false }} /> */}
+            {/* <Stack.Screen name="sign-screen" options={{ headerShown: false }} /> */}
+            <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="(modals)/modal"
