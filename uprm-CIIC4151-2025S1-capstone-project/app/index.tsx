@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { View, StyleSheet } from "react-native";
-import { Text, Button } from "react-native-paper";
-import { useRouter } from "expo-router";
-
 import LoginForm from "@/components/LoginForm";
 import SignInForm from "@/components/SignInForm";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet } from "react-native";
+import { Button, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function IndexScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,7 +15,7 @@ export default function IndexScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text variant="headlineMedium" style={styles.headline}>
         {isLogin ? "Login" : "Sign In"}
       </Text>
@@ -33,7 +33,7 @@ export default function IndexScreen() {
           ? "Don't have an account? Sign In"
           : "Already have an account? Login"}
       </Button>
-    </View>
+    </SafeAreaView>
   );
 }
 

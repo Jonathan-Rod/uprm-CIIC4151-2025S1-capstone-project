@@ -1,10 +1,7 @@
-// TODO
-// Verify hidden box from hover (replace that message below box, red text)
-
+import { saveToken } from "@/utils/auth";
 import { useState } from "react";
 import { View } from "react-native";
-import { TextInput, Button, HelperText } from "react-native-paper";
-import { saveToken } from "@/utils/auth";
+import { Button, HelperText, TextInput } from "react-native-paper";
 import validator from "validator";
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
@@ -29,9 +26,9 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     onSuccess();
   };
 
-  const handleForgotPassword = () => {
-    console.log("Forgot password tapped");
-  };
+  // const handleForgotPassword = () => {
+  //   console.log("Forgot password tapped");
+  // };
 
   return (
     <View style={{ gap: 12 }}>
@@ -42,6 +39,7 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        mode="outlined"
       />
       <HelperText type="error" visible={email.length > 0 && !isEmailValid}>
         Enter a valid email address
@@ -53,15 +51,20 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        mode="outlined"
       />
-      <HelperText type="error" visible={password.length > 0 && !isPasswordValid}>
-        Password must be at least 8 characters, include 1 uppercase, 1 number, and 1 symbol
+      <HelperText
+        type="error"
+        visible={password.length > 0 && !isPasswordValid}
+      >
+        Password must be at least 8 characters, include 1 uppercase, 1 number,
+        and 1 symbol
       </HelperText>
 
       {/* Forgot Password */}
-      <Button mode="text" onPress={handleForgotPassword}>
+      {/* <Button mode="text" onPress={handleForgotPassword}>
         Forgot Password?
-      </Button>
+      </Button> */}
 
       {/* Submit */}
       <Button mode="contained" onPress={handleLogin} disabled={hasErrors()}>

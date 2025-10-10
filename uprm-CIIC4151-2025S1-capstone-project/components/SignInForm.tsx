@@ -1,10 +1,7 @@
-// TODO
-// Add a confirmation email functionality (maybe add a confirmation code page)
-
+import { saveToken } from "@/utils/auth";
 import { useState } from "react";
 import { View } from "react-native";
-import { TextInput, Button, HelperText } from "react-native-paper";
-import { saveToken } from "@/utils/auth";
+import { Button, HelperText, TextInput } from "react-native-paper";
 
 export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -21,13 +18,14 @@ export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <View style={{ gap: 12}}>
+    <View style={{ gap: 12 }}>
       <TextInput
-        label="Email"
         value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
         keyboardType="email-address"
+        mode="outlined"
+        onChangeText={setEmail}
+        label="Email"
+        autoCapitalize="none"
       />
       <HelperText type="error" visible={!email.includes("@")}>
         Enter a valid email address
@@ -38,6 +36,7 @@ export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        mode="outlined"
       />
       <HelperText type="error" visible={password.length < 6}>
         Password must be at least 6 characters
@@ -48,6 +47,7 @@ export default function SignInForm({ onSuccess }: { onSuccess: () => void }) {
         value={confirm}
         onChangeText={setConfirm}
         secureTextEntry
+        mode="outlined"
       />
       <HelperText type="error" visible={password !== confirm}>
         Passwords must match
