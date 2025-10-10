@@ -1,96 +1,79 @@
-import { deleteToken, saveRole } from "@/utils/auth";
 import { useRouter } from "expo-router";
-import { View } from "react-native";
-import { List, Text } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { Button, List, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const router = useRouter();
 
-  const handleDeleteAccount = async () => {
-    // Delete user data from LocalStorage
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    await SecureStore.deleteItemAsync(ROLE_KEY);
-
-    // Navigate to login screen
-    router.replace("/");
-  };
-
-  const handleLogout = async () => {
-    // Log the user out
-    await deleteToken();
-    await saveRole("civilian");
-
-    // Navigate to login screen
-    router.replace("/");
-  };
-
-  const handleAboutUs = () => {
-    // Navigate to About Us screen
-    router.replace("/about-us");
-  };
-
-  const handleContactSupport = () => {
-    // Navigate to Contact Support screen
-    router.replace("/contact-support");
-  };
-
-  const handleTermsAndConditions = () => {
-    // Navigate to Terms and Conditions screen
-    router.replace("/terms-and-conditions");
-  };
-
-  const handlePrivacyPolicy = () => {
-    // Navigate to Privacy Policy screen
-    router.replace("/privacy-policy");
-  };
-
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text variant="headlineMedium">Settings</Text>
+    <SafeAreaView style={styles.container}>
+      <Text variant="headlineMedium" style={styles.header}>
+        Settings
+      </Text>
+
+      <List.Section title="General">
+        <List.Item
+          title="About Us"
+          description="Learn more about our app"
+          left={(props) => <List.Icon {...props} icon="information-outline" />}
+          onPress={() => router.push("/about-us")}
+        />
+        <List.Item
+          title="Contact Support"
+          description="Reach out to our team"
+          left={(props) => <List.Icon {...props} icon="help-circle-outline" />}
+          onPress={() => router.push("/contact-support")}
+        />
+      </List.Section>
+
       <List.Section title="Account">
         <List.Accordion
-          title="Delete Account"
-          left={props => <List.Icon {...props} icon="delete" />}
-          onPress={handleDeleteAccount}>
-          <Text variant="bodyMedium">Are you sure you want to delete your account?</Text>
+          title="Account Options"
+          left={(props) => (
+            <List.Icon {...props} icon="account-circle-outline" />
+          )}
+        >
+          <Button
+            onPress={() => router.push("/delete-account")}
+            style={styles.button}
+          >
+            Delete Account
+          </Button>
+          <Button onPress={() => router.push("/logout")} style={styles.button}>
+            Logout
+          </Button>
         </List.Accordion>
       </List.Section>
-      <List.Section title="Authentication">
-        <List.Accordion
-          title="Logout"
-          left={props => <List.Icon {...props} icon="logout" />}
-          onPress={handleLogout}>
-          <Text variant="bodyMedium">Are you sure you want to logout?</Text>
-        </List.Accordion>
-      </List.Section>
-      <List.Section title="Help">
-        <List.Accordion
-          title="About Us"
-          left={props => <List.Icon {...props} icon="info" />}
-          onPress={handleAboutUs}>
-          <Text variant="bodyMedium">Learn more about our app.</Text>
-        </List.Accordion>
-        <List.Accordion
-          title="Contact Support"
-          left={props => <List.Icon {...props} icon="help" />}
-          onPress={handleContactSupport}>
-          <Text variant="bodyMedium">Contact our support team.</Text>
-        </List.Accordion>
-      </List.Section>
+
       <List.Section title="Legal">
-        <List.Accordion
+        <List.Item
           title="Terms and Conditions"
-          left={props => <List.Icon {...props} icon="file-document" />}
-          onPress={handleTermsAndConditions}>
-          <Text variant="bodyMedium">View our terms and conditions.</Text>
-        </List.Accordion>
-        <List.Accordion
+          left={(props) => (
+            <List.Icon {...props} icon="file-document-outline" />
+          )}
+          onPress={() => router.push("/terms-and-conditions")}
+        />
+        <List.Item
           title="Privacy Policy"
-          left={props => <List.Icon {...props} icon="file-document" />}
-          onPress={handlePrivacyPolicy}>
-          <Text variant="bodyMedium">View our privacy policy.</Text>
-        </List.Accordion>
+          left={(props) => <List.Icon {...props} icon="shield-lock-outline" />}
+          onPress={() => router.push("/privacy-policy")}
+        />
       </List.Section>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  header: {
+    marginBottom: 16,
+  },
+  button: {
+    marginVertical: 4,
+    alignSelf: "flex-start",
+  },
+});
