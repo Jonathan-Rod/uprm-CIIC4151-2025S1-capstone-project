@@ -1,7 +1,8 @@
-import { View, StyleSheet } from "react-native";
-import { TextInput, Button, Text, SegmentedButtons } from "react-native-paper";
-import { useState } from "react";
 import { ReportData } from "@/mocks/mockReports";
+import "@expo/vector-icons";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { Button, Chip, TextInput } from "react-native-paper";
 
 export default function ReportForm({
   onSubmit,
@@ -13,6 +14,13 @@ export default function ReportForm({
   // TODO: #32 Replace with date picker
   const [ocurredOn, setOcurredOn] = useState(new Date());
   const [department, setDepartment] = useState("");
+
+  const departments = [
+    { label: "Infrastructure", value: "infrastructure" },
+    { label: "Energy & Water", value: "energy_water" },
+    { label: "Sanitation", value: "sanitation" },
+    { label: "Environment & Security", value: "environment_security" },
+  ];
 
   const isFormValid = () => {
     return (
@@ -39,60 +47,41 @@ export default function ReportForm({
     if (onSubmit) onSubmit(reportData);
   };
 
+  // TODO: #35 SegmentedButtons need to be allocate vertical in each case (variant screen sizes)
   return (
     <View style={styles.container}>
-      <Text variant="headlineSmall" style={styles.heading}>
-        Create a New Report
-      </Text>
       <TextInput
         label="Title"
         value={title}
         onChangeText={setTitle}
         mode="outlined"
-        style={styles.input}
       />
       <TextInput
         label="Occurred On"
         value={ocurredOn.toISOString()} // ISO string for now
         onChangeText={(value) => setOcurredOn(new Date(value))}
         mode="outlined"
-        style={styles.input}
       />
-      <SegmentedButtons
-        density="small"
-        value={department}
-        onValueChange={setDepartment}
-        buttons={[
-          {
-            value: "infrastructure",
-            label: "Infrastructure",
-            icon: "road-variant",
-          },
-          {
-            value: "energy_water",
-            label: "Energy & Water",
-            icon: "water",
-          },
-          {
-            value: "sanitation",
-            label: "Sanitation",
-            icon: "trash-can",
-          },
-          {
-            value: "environment_security",
-            label: "Environment & Security",
-            icon: "shield-check",
-          },
-        ]}
-      />
+      <View style={styles.chipContainer}>
+        {departments.map((dept) => (
+          <Chip
+            key={dept.value}
+            selected={department === dept.value}
+            onPress={() => setDepartment(dept.value)}
+            mode="outlined"
+          >
+            {dept.label}
+          </Chip>
+        ))}
+      </View>
+
       <TextInput
         label="Description"
         value={description}
         onChangeText={setDescription}
         mode="outlined"
         multiline
-        numberOfLines={4}
-        style={styles.input}
+        numberOfLines={5}
       />
       <Button mode="contained" onPress={handleSubmit} disabled={!isFormValid()}>
         Submit Report
@@ -106,10 +95,10 @@ const styles = StyleSheet.create({
     gap: 16,
     padding: 16,
   },
-  heading: {
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "transparent",
+  chipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginVertical: 8,
   },
 });
