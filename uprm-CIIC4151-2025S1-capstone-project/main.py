@@ -7,7 +7,7 @@ from utils.jwt_helper import decode_token
 app = Flask(__name__)
 CORS(app)
 
-######################################################################################
+# ######################################################################################
 
 @app.route("/report", methods=["POST"])
 # This fucntion does two things. First it grabs the user id when the user logs in (recieves jwt). Second, the user_id is passed as parameter to insert report.
@@ -30,7 +30,7 @@ def getReports():
     handler = ReportsHandler()
     return handler.getAllReports()
 
-######################################################################################
+# ######################################################################################
 
 @app.route("/login", methods=["POST"])
 def login():

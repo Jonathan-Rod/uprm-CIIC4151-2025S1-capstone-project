@@ -1,7 +1,7 @@
 import { View, StyleSheet, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import ReportForm, { ReportData } from "@/components/ReportForm";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { getToken } from "@/utils/auth";
 
 export default function ReportFormModal() {
@@ -17,7 +17,7 @@ export default function ReportFormModal() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.0.3:5000/report", {
+      const response = await fetch("http://192.168.0.2:5000/report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,6 +36,7 @@ export default function ReportFormModal() {
       if (response.ok) {
         Alert.alert("Success", "Report submitted successfully!");
         router.back(); // closes modal
+        // No need for onAdded callback — ExploreScreen refreshes on focus
       } else {
         Alert.alert("Error", resData.error || "Failed to submit report");
       }

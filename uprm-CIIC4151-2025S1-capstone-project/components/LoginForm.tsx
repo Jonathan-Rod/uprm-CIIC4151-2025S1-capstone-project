@@ -17,7 +17,7 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.0.3:5000/login", {
+      const response = await fetch("http://192.168.0.2:5000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
