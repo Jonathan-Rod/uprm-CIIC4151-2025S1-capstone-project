@@ -20,7 +20,7 @@ export default function ReportCard({
     onPress ??
     (() =>
       router.push({
-        pathname: "/report-view",
+        pathname: "../app/(modals)/report-view",
         params: { id: report.id },
       }));
 
