@@ -55,6 +55,7 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        mode="outlined"
       />
       <HelperText type="error" visible={email.length > 0 && !email.includes("@")}>
         Enter a valid email address
@@ -65,6 +66,7 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        mode="outlined"
       />
 
       <Button

@@ -1,11 +1,7 @@
-// For some reason the email/password validator was in the login page. Changed it so that it works only in the register page.
-
-import { useState } from "react";
-import { View, Alert } from "react-native";
-import { TextInput, Button, HelperText } from "react-native-paper";
-import validator from "validator";
-import { useAuth } from "@/context/AuthContext";
 import { saveToken } from "@/utils/auth";
+import { useState } from "react";
+import { View } from "react-native";
+import { Button, HelperText, TextInput } from "react-native-paper";
 
 export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -60,11 +56,12 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <View style={{ gap: 12 }}>
       <TextInput
-        label="Email"
         value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
         keyboardType="email-address"
+        mode="outlined"
+        onChangeText={setEmail}
+        label="Email"
+        autoCapitalize="none"
       />
       <HelperText type="error" visible={email.length > 0 && !isEmailValid}>
         Enter a valid email address
@@ -75,6 +72,7 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        mode="outlined"
       />
       <HelperText type="error" visible={password.length > 0 && !isPasswordValid}>
         Password must be 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol
@@ -85,6 +83,7 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         value={confirm}
         onChangeText={setConfirm}
         secureTextEntry
+        mode="outlined"
       />
       <HelperText type="error" visible={password !== confirm}>
         Passwords must match

@@ -38,9 +38,13 @@ async function request(endpoint: string, method = "GET", body?: any) {
   return response.json();
 }
 
-// 1. Fetch all reports
-export async function fetchReports() {
-  return request("/report");
+// 1. Fetch paginated reports
+export async function fetchReports(page?: number, limit?: number) {
+  if (page && limit) {
+    return request(`/reports?page=${page}&limit=${limit}`);
+  } else {
+    return request("/reports");
+  }
 }
 
 // 2. Fetch single report by ID

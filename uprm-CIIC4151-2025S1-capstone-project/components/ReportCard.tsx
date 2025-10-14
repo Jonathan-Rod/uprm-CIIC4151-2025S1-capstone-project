@@ -1,109 +1,94 @@
 import { Colors } from "@/constants/theme";
 import { useRouter } from "expo-router";
-import { View, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Badge, Card, Text } from "react-native-paper";
 
-type ReportStatus = "open" | "in_progress" | "resolved" | "denied";
+type ReportStatus = "open" | "in_progress" | "resolved" | "denied"; // this should be in interfaces.tsx
 
-export default function ReportCard({ report }: { report: any }) {
+const fallbackImageUrl = "https://via.placeholder.com/400x200?text=No+Image";
+
+export default function ReportCard({
+  report,
+  onPress,
+}: {
+  report: any;
+  onPress?: () => void;
+}) {
   const router = useRouter();
+
+  const handlePress =
+    onPress ??
+    (() =>
+      router.push({
+        pathname: "/report-view",
+        params: { id: report.id },
+      }));
 
   const statusColorMap: Record<ReportStatus, string> = {
     open: Colors.light.alert,
-    in_progress: "#F9A825", // amber
+    in_progress: "#F9A825",
     resolved: Colors.light.success,
-    denied: "#B00020", // red
+    denied: "#B00020",
   };
 
   const statusColor =
     statusColorMap[report.status as ReportStatus] || Colors.light.icon;
 
-  // Fallbacks for missing fields
-  const image =
-    report.image_url ||
-    "https://via.placeholder.com/400x200.png?text=No+Image+Available";
-  const createdAt = report.created_at || report.createdAt;
-  const resolvedAt = report.resolved_at || report.resolvedAt;
-
   return (
     <Card
-      onPress={() => {
-        // Optional: navigate to detail page later
-        // router.push(`/report-modal?id=${report.id}`);
-      }}
-      style={{
-        marginVertical: 8,
-        backgroundColor: Colors.light.card,
-        borderRadius: 12,
-        overflow: "hidden",
-      }}
+      onPress={handlePress}
+      style={styles.card}
       mode="elevated"
+      accessibilityLabel={`Report card for ${report.title}`}
+      testID={`report-card-${report.id}`}
     >
-      {/* Cover image */}
-      <Image
-        source={{ uri: image }}
-        style={{
-          width: "100%",
-          height: 180,
-          backgroundColor: "#e0e0e0",
-        }}
-        resizeMode="cover"
-      />
-
-      {/* Content */}
-      <Card.Content style={{ paddingVertical: 12 }}>
-        {/* Title + Status */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 6,
-          }}
-        >
-          <Text variant="titleMedium" style={{ flex: 1, flexWrap: "wrap" }}>
-            {report.title}
-          </Text>
-          <Badge
-            style={{
-              backgroundColor: statusColor,
-              color: "#fff",
-              textTransform: "capitalize",
-            }}
-          >
+      <Card.Cover source={{ uri: report.image_url || fallbackImageUrl }} />
+      <Card.Content>
+        <View style={styles.headerRow}>
+          <Text variant="titleMedium">{report.title}</Text>
+          <Badge style={[styles.badge, { backgroundColor: statusColor }]}>
             {report.status}
           </Badge>
         </View>
 
-        {/* Description */}
-        <Text
-          style={{
-            marginTop: 4,
-            color: Colors.light.text,
-          }}
-        >
-          {report.description}
+        <Text style={styles.description}>{report.description}</Text>
+
+        <Text style={styles.meta}>
+          Created at: {new Date(report.created_at).toLocaleString()}
         </Text>
 
-        {/* Metadata */}
-        <View style={{ marginTop: 10 }}>
-          <Text style={{ fontSize: 12, color: Colors.light.icon }}>
-            Created: {createdAt ? new Date(createdAt).toLocaleString() : "—"}
+        {report.resolved_at && (
+          <Text style={styles.meta}>
+            Resolved at: {new Date(report.resolved_at).toLocaleString()}
           </Text>
+        )}
 
-          {resolvedAt && (
-            <Text style={{ fontSize: 12, color: Colors.light.icon }}>
-              Resolved: {new Date(resolvedAt).toLocaleString()}
-            </Text>
-          )}
-
-          {report.rating && (
-            <Text style={{ fontSize: 12, color: Colors.light.icon }}>
-              Rating: {report.rating} / 5
-            </Text>
-          )}
-        </View>
+        <Text style={styles.meta}>
+          Rating: {"⭐".repeat(report.rating)} ({report.rating} / 5)
+        </Text>
       </Card.Content>
     </Card>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    marginVertical: 8,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  badge: {
+    alignSelf: "center",
+  },
+  description: {
+    marginTop: 4,
+  },
+  meta: {
+    fontSize: 12,
+    color: Colors.light.icon,
+    marginTop: 4,
+  },
+});

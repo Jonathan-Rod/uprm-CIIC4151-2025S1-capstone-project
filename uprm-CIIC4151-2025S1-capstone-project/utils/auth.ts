@@ -20,7 +20,39 @@ export const saveToken = async (token: string): Promise<void> => {
   }
 };
 
-// Retrieve token securely
+const ROLE_KEY = "userRole";
+
+export const saveRole = async (role: "admin" | "civilian") => {
+  if (Platform.OS === "web") {
+    localStorage.setItem(ROLE_KEY, role);
+  } else {
+    await SecureStore.setItemAsync(ROLE_KEY, role);
+  }
+};
+
+export const getRole = async (): Promise<"admin" | "civilian"> => {
+  try {
+    if (Platform.OS === "web") {
+      const role = localStorage.getItem(ROLE_KEY);
+      if (role) {
+        return role as "admin" | "civilian";
+      } else {
+        return "civilian";
+      }
+    } else {
+      const role = await SecureStore.getItemAsync(ROLE_KEY);
+      if (role) {
+        return role as "admin" | "civilian";
+      } else {
+        return "civilian";
+      }
+    }
+  } catch (error) {
+    console.error("Error retrieving role:", error);
+    return "civilian";
+  }
+};
+
 export const getToken = async (): Promise<string | null> => {
   try {
     if (Platform.OS === "web") {

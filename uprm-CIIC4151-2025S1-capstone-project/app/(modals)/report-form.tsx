@@ -1,57 +1,24 @@
-import { View, StyleSheet, Alert } from "react-native";
-import ReportForm, { ReportData } from "@/components/ReportForm";
-import { useState } from "react";
+import ReportForm from "@/components/ReportForm";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { useRouter } from "expo-router";
-import { getToken } from "@/utils/auth";
+import { StyleSheet } from "react-native";
 
 export default function ReportFormModal() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (data: ReportData) => {
-    const token = await getToken();
-    if (!token) {
-      Alert.alert("Unauthorized", "You must be logged in to submit a report.");
-      return;
-    }
+  const handleSubmit = (data: any) => {
+    // TODO: Send 'data' to the backend API endpoint for report submission.
 
-    setLoading(true);
-    try {
-      const response = await fetch("http://192.168.0.2:5000/report", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          ocurredOn: data.ocurredOn.toISOString(),
-          department: data.department,
-        }),
-      });
-
-      const resData = await response.json();
-
-      if (response.ok) {
-        Alert.alert("Success", "Report submitted successfully!");
-        router.back(); // closes modal
-        // No need for onAdded callback — ExploreScreen refreshes on focus
-      } else {
-        Alert.alert("Error", resData.error || "Failed to submit report");
-      }
-    } catch (err) {
-      console.error("Submission error:", err);
-      Alert.alert("Network Error", "Could not connect to the server.");
-    } finally {
-      setLoading(false);
-    }
+    console.log("Report submitted:", data);
+    router.back();
   };
 
   return (
-    <View style={styles.container}>
-      <ReportForm onSubmit={handleSubmit} loading={loading} />
-    </View>
+    <ThemedView style={styles.container}>
+      <ThemedText type="title">Report Form</ThemedText>
+      <ReportForm onSubmit={handleSubmit}></ReportForm>
+    </ThemedView>
   );
 }
 
