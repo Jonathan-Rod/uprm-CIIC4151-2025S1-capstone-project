@@ -1,7 +1,9 @@
 import { saveToken } from "@/utils/auth";
 import { useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { Button, HelperText, TextInput } from "react-native-paper";
+import validator from "validator";
+import { AuthProvider, useAuth } from "@/utils/context/AuthContext";
 
 export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");

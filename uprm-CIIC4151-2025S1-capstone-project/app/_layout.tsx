@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { PaperProvider } from "react-native-paper";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AuthProvider, useAuth } from "@/utils/context/AuthContext";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -45,8 +46,8 @@ function AppContent() {
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navigationTheme}>
           <Stack>
-            {/* <Stack.Screen name="sign-screen" options={{ headerShown: false }} /> */}
-            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="sign-screen" options={{ headerShown: false }} />
+            {/* <Stack.Screen name="index" options={{ headerShown: false }} /> */}
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="(modals)/about-us"

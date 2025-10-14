@@ -5,30 +5,47 @@ import { FAB, Text, ActivityIndicator } from "react-native-paper";
 import { useRouter } from "expo-router";
 import ReportCard from "@/components/ReportCard";
 import { fetchReports } from "@/utils/api";
-// import type { Report } from "@/types/report"; // Adjust path if needed
-
-type Report = { id: number; title: string; description: string; status: string; createdAt: string; updatedAt: string; pinned: boolean; createdBy: number; validatedBy: number | null; resolvedBy: number | null; category: string; location: string | null; image_url: string | null; rating: number | null; }; type User = { id: number; email: string; admin: boolean; };
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const limit = 10;
 
   const handleExploreReports = async () => {
     try {
       setError("");
       setRefreshing(true);
-      const data = await fetchReports(); // No pagination
-      setReports(data); // Assumes backend returns an array of reports
+      const data = await fetchReports(1, limit);
+      setReports(data.reports);
+      setCurrentPage(1);
+      setTotalPages(data.totalPages);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
-      }
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const loadMoreReports = async () => {
+    if (currentPage >= totalPages || isLoadingMore || refreshing) return;
+
+    try {
+      setIsLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const data = await fetchReports(nextPage, limit);
+      setReports((prev) => [...prev, ...data.reports]);
+      setCurrentPage(nextPage);
+      setTotalPages(data.totalPages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -62,6 +79,13 @@ export default function ExploreScreen() {
             refreshing={refreshing}
             onRefresh={handleExploreReports}
           />
+        }
+        onEndReached={loadMoreReports}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator style={{ paddingVertical: 16 }} />
+          ) : null
         }
         ListEmptyComponent={
           refreshing ? (

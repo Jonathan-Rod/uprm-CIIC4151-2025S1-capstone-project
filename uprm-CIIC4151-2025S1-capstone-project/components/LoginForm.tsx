@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Alert } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
-import { useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/utils/context/AuthContext";
 import { saveToken } from "@/utils/auth";
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
