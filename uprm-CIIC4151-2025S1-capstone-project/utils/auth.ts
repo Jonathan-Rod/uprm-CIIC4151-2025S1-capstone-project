@@ -1,8 +1,13 @@
+// This file will store and handle the tokens created from the jwt_helper file.
+
+// This file securely stores and handles the tokens created from the jwt_helper file.
+
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const TOKEN_KEY = "userToken";
 
+// Save token securely
 export const saveToken = async (token: string): Promise<void> => {
   try {
     if (Platform.OS === "web") {
@@ -61,6 +66,7 @@ export const getToken = async (): Promise<string | null> => {
   }
 };
 
+// Delete token securely
 export const deleteToken = async (): Promise<void> => {
   try {
     if (Platform.OS === "web") {
@@ -72,3 +78,4 @@ export const deleteToken = async (): Promise<void> => {
     console.error("Error deleting token:", error);
   }
 };
+

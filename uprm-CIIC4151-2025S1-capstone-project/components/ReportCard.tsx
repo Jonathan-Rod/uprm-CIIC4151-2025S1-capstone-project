@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { Badge, Card, Text } from "react-native-paper";
 
-type ReportStatus = "open" | "in_progress" | "resolved" | "denied";
+type ReportStatus = "open" | "in_progress" | "resolved" | "denied"; // this should be in interfaces.tsx
 
 const fallbackImageUrl = "https://via.placeholder.com/400x200?text=No+Image";
 
