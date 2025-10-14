@@ -6,12 +6,13 @@ import { Button, Chip, TextInput } from "react-native-paper";
 
 export default function ReportForm({
   onSubmit,
+  loading = false,
 }: {
   onSubmit?: (data: ReportData) => void;
+  loading?: boolean;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  // TODO: #32 Replace with date picker
   const [ocurredOn, setOcurredOn] = useState(new Date());
   const [department, setDepartment] = useState("");
 
@@ -32,17 +33,12 @@ export default function ReportForm({
   };
 
   const handleSubmit = () => {
+    if (!isFormValid()) return;
     const reportData: ReportData = {
       title,
       description,
-      ocurredOn: ocurredOn,
-      department: department as
-        | "infrastructure"
-        | "energy_water"
-        | "sanitation"
-        | "environment_security",
-      status: "created",
-      createdAt: new Date(),
+      ocurredOn,
+      department: department as ReportData["department"],
     };
     if (onSubmit) onSubmit(reportData);
   };
@@ -56,9 +52,10 @@ export default function ReportForm({
         onChangeText={setTitle}
         mode="outlined"
       />
+
       <TextInput
         label="Occurred On"
-        value={ocurredOn.toISOString()} // ISO string for now
+        value={ocurredOn.toISOString().split("T")[0]}
         onChangeText={(value) => setOcurredOn(new Date(value))}
         mode="outlined"
       />
@@ -83,7 +80,13 @@ export default function ReportForm({
         multiline
         numberOfLines={5}
       />
-      <Button mode="contained" onPress={handleSubmit} disabled={!isFormValid()}>
+
+      <Button
+        mode="contained"
+        onPress={handleSubmit}
+        disabled={!isFormValid() || loading}
+        loading={loading}
+      >
         Submit Report
       </Button>
     </View>

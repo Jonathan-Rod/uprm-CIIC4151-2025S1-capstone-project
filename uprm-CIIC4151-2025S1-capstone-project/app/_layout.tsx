@@ -19,19 +19,22 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-export default function RootLayout() {
+// This inner component uses AuthContext
+function AppContent() {
   const colorScheme = useColorScheme();
   const paperTheme = colorScheme === "dark" ? paperDarkTheme : paperLightTheme;
   const navigationTheme =
     colorScheme === "dark" ? navigationDarkTheme : navigationLightTheme;
 
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     const checkAuth = async () => {
       const token = await getToken();
-      if (!token) {
-        router.replace("/"); // Redirect to SignScreen
+      // if neither a token nor user info exists → redirect to login
+      if (!token || !user) {
+        router.replace("/");
       }
     };
     checkAuth();
@@ -42,6 +45,8 @@ export default function RootLayout() {
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navigationTheme}>
           <Stack>
+            {/* <Stack.Screen name="sign-screen" options={{ headerShown: false }} /> */}
+            <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="(modals)/about-us"
@@ -80,9 +85,18 @@ export default function RootLayout() {
               options={{ presentation: "modal", title: "terms-and-conditions" }}
             />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         </ThemeProvider>
       </PaperProvider>
     </SafeAreaProvider>
+  );
+}
+
+// Wrap everything with AuthProvider
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

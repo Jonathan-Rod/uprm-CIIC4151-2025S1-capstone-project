@@ -1,38 +1,54 @@
-import { saveToken } from "@/utils/auth";
 import { useState } from "react";
-import { View } from "react-native";
-import { Button, HelperText, TextInput } from "react-native-paper";
-import validator from "validator";
+import { View, Alert } from "react-native";
+import { TextInput, Button, HelperText } from "react-native-paper";
+import { useAuth } from "@/context/AuthContext";
+import { saveToken } from "@/utils/auth";
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-  const isEmailValid = validator.isEmail(email);
-
-  const isPasswordValid = validator.isStrongPassword(password, {
-    minLength: 8,
-    minLowercase: 1,
-    minUppercase: 1,
-    minNumbers: 1,
-    minSymbols: 1,
-  });
-
-  const hasErrors = () => !isEmailValid || !isPasswordValid;
+  const hasErrors = () => !email || !password;
 
   const handleLogin = async () => {
     if (hasErrors()) return;
-    await saveToken("user-token");
-    onSuccess();
-  };
 
-  // const handleForgotPassword = () => {
-  //   console.log("Forgot password tapped");
-  // };
+    setLoading(true);
+    try {
+      const response = await fetch("http://192.168.0.2:5000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (data.token) await saveToken(data.token);
+
+        // Update AuthContext with full user info (id, email, admin)
+        login({
+          id: data.user.id,
+          email: data.user.email,
+          admin: data.user.admin,
+        });
+
+        onSuccess();
+      } else {
+        Alert.alert("Invalid Credentials", data.error_msg || "Check your login details.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      Alert.alert("Connection Error", "Could not connect to the server.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={{ gap: 12 }}>
-      {/* Email */}
       <TextInput
         label="Email"
         value={email}
@@ -41,11 +57,10 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         keyboardType="email-address"
         mode="outlined"
       />
-      <HelperText type="error" visible={email.length > 0 && !isEmailValid}>
+      <HelperText type="error" visible={email.length > 0 && !email.includes("@")}>
         Enter a valid email address
       </HelperText>
 
-      {/* Password */}
       <TextInput
         label="Password"
         value={password}
@@ -53,21 +68,13 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         secureTextEntry
         mode="outlined"
       />
-      <HelperText
-        type="error"
-        visible={password.length > 0 && !isPasswordValid}
+
+      <Button
+        mode="contained"
+        onPress={handleLogin}
+        disabled={hasErrors() || loading}
+        loading={loading}
       >
-        Password must be at least 8 characters, include 1 uppercase, 1 number,
-        and 1 symbol
-      </HelperText>
-
-      {/* Forgot Password */}
-      {/* <Button mode="text" onPress={handleForgotPassword}>
-        Forgot Password?
-      </Button> */}
-
-      {/* Submit */}
-      <Button mode="contained" onPress={handleLogin} disabled={hasErrors()}>
         Log In
       </Button>
     </View>
