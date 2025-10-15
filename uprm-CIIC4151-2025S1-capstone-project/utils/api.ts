@@ -71,7 +71,11 @@ export async function loginUser(data: { email: string; password: string }) {
 }
 
 // 7. Register user
-export async function registerUser(data: { email: string; password: string; admin: boolean }) {
+export async function registerUser(data: {
+  email: string;
+  password: string;
+  admin: boolean;
+}) {
   return request("/registration", "POST", data);
 }
 

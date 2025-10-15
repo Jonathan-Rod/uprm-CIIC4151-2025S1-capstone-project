@@ -1,9 +1,9 @@
-import { API_BASE_URL } from '@/utils/api';
-import { saveToken } from '@/utils/auth';
-import { useAuth } from '@/utils/context/AuthContext';
-import { useState } from 'react';
-import { StyleSheet, View, Keyboard, Alert } from 'react-native';
-import { TextInput, Button, HelperText } from 'react-native-paper';
+import { loginUser } from "@/utils/api"; // Import the API function
+import { saveToken } from "@/utils/auth";
+import { useAuth } from "@/utils/context/AuthContext";
+import { useState } from "react";
+import { StyleSheet, View, Keyboard, Alert } from "react-native";
+import { TextInput, Button, HelperText } from "react-native-paper";
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -23,36 +23,32 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        setAuthError(true);
-        throw new Error("Invalid server response");
-      }
-
-      if (data.success) {
-        if (data.token) await saveToken(data.token);
+      const data = await loginUser({ email, password });
+      
+      if (data.token) {
+        await saveToken(data.token);
         login({
-          id: data.user.id,
-          email: data.user.email,
-          admin: data.user.admin,
+          id: data.user_id || data.id,
+          email: data.email,
+          admin: data.admin,
         });
         onSuccess();
       } else {
         setAuthError(true);
-        Alert.alert("Invalid Credentials", data.error_msg || "Check your login details.");
+        Alert.alert(
+          "Invalid Credentials",
+          data.error || "Check your login details."
+        );
       }
     } catch (error) {
       console.error("Login error:", error);
       setAuthError(true);
-      Alert.alert("Connection Error", "Could not connect to the server.");
+      Alert.alert(
+        "Login Error",
+        error instanceof Error
+          ? error.message
+          : "Could not connect to the server."
+      );
     } finally {
       setLoading(false);
     }
@@ -71,7 +67,11 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         style={styles.input}
         outlineStyle={styles.inputOutline}
       />
-      <HelperText type="error" visible={hasEmailError()} style={styles.helperText}>
+      <HelperText
+        type="error"
+        visible={hasEmailError()}
+        style={styles.helperText}
+      >
         Enter a valid email address
       </HelperText>
 
@@ -115,7 +115,6 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   input: {
-    // backgroundColor: '#fff',
     fontSize: 16,
   },
   inputOutline: {
@@ -123,12 +122,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   button: {
-    // color: ""
     marginTop: 8,
     paddingVertical: 8,
     borderRadius: 8,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -139,7 +137,7 @@ const styles = StyleSheet.create({
   buttonLabel: {
     // TODO : Set a bright color but not blue!! (white or gray)
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     paddingVertical: 4,
   },
   helperText: {
@@ -149,7 +147,7 @@ const styles = StyleSheet.create({
   },
   authErrorText: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
     paddingHorizontal: 8,
   },
