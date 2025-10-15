@@ -1,7 +1,7 @@
 pg_config = {
-    "user": "mifc",
+    "user": "mifc2",
     "password": "dbuser",
-    "database": "dbJMR",
+    "database": "dbjmr2",
     "host": "localhost",
     "port": 6264,
 }

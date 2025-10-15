@@ -2,22 +2,28 @@ import ReportForm from "@/components/ReportForm";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useRouter } from "expo-router";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Alert } from "react-native";
+import { createReport } from "@/utils/api"; // Import API function
+import type { ReportFormData } from "@/types/interfaces"; // Use correct type
 
 export default function ReportFormModal() {
   const router = useRouter();
 
-  const handleSubmit = (data: any) => {
-    // TODO: Send 'data' to the backend API endpoint for report submission.
-
-    console.log("Report submitted:", data);
-    router.back();
+  const handleSubmit = async (data: ReportFormData) => {
+    try {
+      await createReport(data); // Send to backend
+      Alert.alert("Success", "Report submitted successfully!");
+      router.back();
+    } catch (error) {
+      console.error("Report submission error:", error);
+      Alert.alert("Error", "Failed to submit report. Please try again.");
+    }
   };
 
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title">Report Form</ThemedText>
-      <ReportForm onSubmit={handleSubmit}></ReportForm>
+      <ReportForm onSubmit={handleSubmit} />
     </ThemedView>
   );
 }

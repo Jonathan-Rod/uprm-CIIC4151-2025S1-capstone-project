@@ -6,6 +6,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const TOKEN_KEY = "userToken";
+const ADMIN_KEY = "isAdmin";
 
 // Save token securely
 export const saveToken = async (token: string): Promise<void> => {
@@ -20,39 +21,7 @@ export const saveToken = async (token: string): Promise<void> => {
   }
 };
 
-const ROLE_KEY = "userRole";
-
-export const saveRole = async (role: "admin" | "civilian") => {
-  if (Platform.OS === "web") {
-    localStorage.setItem(ROLE_KEY, role);
-  } else {
-    await SecureStore.setItemAsync(ROLE_KEY, role);
-  }
-};
-
-export const getRole = async (): Promise<"admin" | "civilian"> => {
-  try {
-    if (Platform.OS === "web") {
-      const role = localStorage.getItem(ROLE_KEY);
-      if (role) {
-        return role as "admin" | "civilian";
-      } else {
-        return "civilian";
-      }
-    } else {
-      const role = await SecureStore.getItemAsync(ROLE_KEY);
-      if (role) {
-        return role as "admin" | "civilian";
-      } else {
-        return "civilian";
-      }
-    }
-  } catch (error) {
-    console.error("Error retrieving role:", error);
-    return "civilian";
-  }
-};
-
+// Get token securely
 export const getToken = async (): Promise<string | null> => {
   try {
     if (Platform.OS === "web") {
@@ -76,6 +45,34 @@ export const deleteToken = async (): Promise<void> => {
     }
   } catch (error) {
     console.error("Error deleting token:", error);
+  }
+};
+
+// Save admin flag securely
+export const saveAdminFlag = async (isAdmin: boolean): Promise<void> => {
+  try {
+    const value = JSON.stringify(isAdmin);
+    if (Platform.OS === "web") {
+      localStorage.setItem(ADMIN_KEY, value);
+    } else {
+      await SecureStore.setItemAsync(ADMIN_KEY, value);
+    }
+  } catch (error) {
+    console.error("Error saving admin flag:", error);
+  }
+};
+
+// Get admin flag securely
+export const getAdminFlag = async (): Promise<boolean> => {
+  try {
+    const raw = Platform.OS === "web"
+      ? localStorage.getItem(ADMIN_KEY)
+      : await SecureStore.getItemAsync(ADMIN_KEY);
+
+    return raw === "true";
+  } catch (error) {
+    console.error("Error retrieving admin flag:", error);
+    return false;
   }
 };
 

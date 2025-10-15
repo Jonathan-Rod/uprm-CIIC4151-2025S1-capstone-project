@@ -5,7 +5,7 @@ import UserCard from "@/components/UserCard";
 import VisitedReports from "@/components/VisitedReports";
 
 import { mockReports } from "@/mocks/report";
-import { getRole, getToken } from "@/utils/auth";
+import { getToken } from "@/utils/auth";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
@@ -15,9 +15,11 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [reports] = useState(mockReports);
 
-  const [pinnedReports, setPinnedReports] = useState([]);
-  const [lastThreeVisitedReports, setLastThreeVisitedReports] = useState([]);
-  const [lastReportDate, setLastReportDate] = useState(null);
+  // Commented out until pinned/visited logic is implemented
+  // const [pinnedReports, setPinnedReports] = useState([]);
+  // const [lastThreeVisitedReports, setLastThreeVisitedReports] = useState([]);
+  // const [lastReportDate, setLastReportDate] = useState(null);
+
   const [numberOfReportsFiled, setNumberOfReportsFiled] = useState(0);
   const [numberOfReportsResolved, setNumberOfReportsResolved] = useState(0);
   const [numberOfReportsPending, setNumberOfReportsPending] = useState(0);
@@ -28,13 +30,11 @@ export default function ProfileScreen() {
   useEffect(() => {
     const fetchUserAndReports = async () => {
       const tokenResult = await getToken();
-      const roleResult = await getRole();
 
       let parsedUser = null;
-      if (tokenResult && roleResult) {
+      if (tokenResult) {
         try {
           parsedUser = JSON.parse(tokenResult).user;
-          parsedUser.role = roleResult;
         } catch {
           parsedUser = null;
         }
@@ -42,16 +42,15 @@ export default function ProfileScreen() {
       setUser(parsedUser);
 
       if (reports && parsedUser) {
-        const pinned = reports.filter(
-          (r) => r.pinned && r.status !== "pending"
-        );
-        setPinnedReports(pinned);
+        // Commented out until pinned/visited logic is implemented
+        // const pinned = reports.filter((r) => r.pinned && r.status !== "pending");
+        // setPinnedReports(pinned);
 
-        const visited = reports.slice(-3);
-        setLastThreeVisitedReports(visited);
+        // const visited = reports.slice(-3);
+        // setLastThreeVisitedReports(visited);
 
-        const lastDate = reports[reports.length - 1]?.createdAt ?? null;
-        setLastReportDate(lastDate);
+        // const lastDate = reports[reports.length - 1]?.createdAt ?? null;
+        // setLastReportDate(lastDate);
 
         setNumberOfReportsFiled(reports.length);
         setNumberOfReportsResolved(
@@ -61,7 +60,7 @@ export default function ProfileScreen() {
           reports.filter((r) => r.status === "pending").length
         );
 
-        if (parsedUser.role === "admin") {
+        if (parsedUser.admin === true) {
           setReportsResolvedByAdmin(
             reports.filter(
               (r) => r.status === "resolved" && r.resolvedBy === parsedUser.id
@@ -93,11 +92,11 @@ export default function ProfileScreen() {
           filed={numberOfReportsFiled}
           resolved={numberOfReportsResolved}
           pending={numberOfReportsPending}
-          pinned={pinnedReports.length}
-          lastReportDate={lastReportDate}
+          pinned={0} // Placeholder until pinnedReports is re-enabled
+          lastReportDate={null} // Placeholder until lastReportDate is re-enabled
         />
 
-        {user?.role === "admin" && (
+        {user?.admin === true && (
           <AdminStats
             assigned={reportsAssignedToAdmin}
             pending={reportsPendingByAdmin}
@@ -105,8 +104,9 @@ export default function ProfileScreen() {
           />
         )}
 
-        <PinnedReports reports={pinnedReports} />
-        <VisitedReports reports={lastThreeVisitedReports} />
+        {/* Commented out until logic is implemented */}
+        {/* <PinnedReports reports={pinnedReports} /> */}
+        {/* <VisitedReports reports={lastThreeVisitedReports} /> */}
       </ScrollView>
     </SafeAreaView>
   );

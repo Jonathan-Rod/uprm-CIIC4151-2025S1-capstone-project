@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Alert } from "react-native";
+import { View, Alert, Keyboard } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
-import { AuthProvider, useAuth } from "@/utils/context/AuthContext";
+import { useAuth } from "@/utils/context/AuthContext";
 import { saveToken } from "@/utils/auth";
+import { API_BASE_URL } from "@/utils/api"; // Import shared base URL
 
 export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
@@ -15,20 +16,26 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const handleLogin = async () => {
     if (hasErrors()) return;
 
+    Keyboard.dismiss();
     setLoading(true);
+
     try {
-      const response = await fetch("http://192.168.0.2:5000/login", {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Invalid server response");
+      }
 
       if (data.success) {
         if (data.token) await saveToken(data.token);
 
-        // Update AuthContext with full user info (id, email, admin)
         login({
           id: data.user.id,
           email: data.user.email,
@@ -56,6 +63,7 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         autoCapitalize="none"
         keyboardType="email-address"
         mode="outlined"
+        disabled={loading}
       />
       <HelperText type="error" visible={email.length > 0 && !email.includes("@")}>
         Enter a valid email address
@@ -67,7 +75,12 @@ export default function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         onChangeText={setPassword}
         secureTextEntry
         mode="outlined"
+        disabled={loading}
       />
+
+      <HelperText type="error" visible={hasErrors()}>
+        Email and password are required
+      </HelperText>
 
       <Button
         mode="contained"

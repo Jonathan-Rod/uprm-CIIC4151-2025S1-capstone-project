@@ -1,17 +1,18 @@
 import { saveToken } from "@/utils/auth";
 import { useState } from "react";
-import { Alert, View } from "react-native";
+import { Alert, View, Keyboard } from "react-native";
 import { Button, HelperText, TextInput } from "react-native-paper";
 import validator from "validator";
-import { AuthProvider, useAuth } from "@/utils/context/AuthContext";
+import { useAuth } from "@/utils/context/AuthContext";
+import { API_BASE_URL } from "@/utils/api"; // Import shared base URL
 
 export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
-  // Validation
   const isEmailValid = validator.isEmail(email);
   const isPasswordValid = validator.isStrongPassword(password, {
     minLength: 8,
@@ -25,8 +26,11 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const handleSignUp = async () => {
     if (hasErrors()) return;
 
+    Keyboard.dismiss();
+    setLoading(true);
+
     try {
-      const response = await fetch("http://192.168.0.2:5000/registration", {
+      const response = await fetch(`${API_BASE_URL}/registration`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, admin: false }), // default to civilian
@@ -52,6 +56,8 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
     } catch (error) {
       console.error("Sign-up error:", error);
       Alert.alert("Connection Error", "Could not connect to the server.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,6 +70,7 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         onChangeText={setEmail}
         label="Email"
         autoCapitalize="none"
+        disabled={loading}
       />
       <HelperText type="error" visible={email.length > 0 && !isEmailValid}>
         Enter a valid email address
@@ -75,6 +82,7 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         onChangeText={setPassword}
         secureTextEntry
         mode="outlined"
+        disabled={loading}
       />
       <HelperText type="error" visible={password.length > 0 && !isPasswordValid}>
         Password must be 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol
@@ -86,15 +94,15 @@ export default function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         onChangeText={setConfirm}
         secureTextEntry
         mode="outlined"
+        disabled={loading}
       />
       <HelperText type="error" visible={password !== confirm}>
         Passwords must match
       </HelperText>
 
-      <Button mode="contained" onPress={handleSignUp} disabled={hasErrors()}>
+      <Button mode="contained" onPress={handleSignUp} disabled={hasErrors() || loading} loading={loading}>
         Sign Up
       </Button>
     </View>
   );
 }
-

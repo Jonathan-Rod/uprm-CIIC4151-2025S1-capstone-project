@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from dao.d_users import UsersDAO
 from constants import HTTP_STATUS
-from utils.jwt_helper import create_token
+from jwt_helper import create_token
 
 class UsersHandler:
 

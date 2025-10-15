@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FAB, Text, ActivityIndicator } from "react-native-paper";
+import { FAB, Text, ActivityIndicator, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
 import ReportCard from "@/components/ReportCard";
 import { fetchReports } from "@/utils/api";
+import type { ReportData } from "@/types/interfaces"; // Import correct type
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState<ReportData[]>([]); // Typed state
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,7 +40,7 @@ export default function ExploreScreen() {
       setIsLoadingMore(true);
       const nextPage = currentPage + 1;
       const data = await fetchReports(nextPage, limit);
-      setReports((prev) => [...prev, ...data.reports]);
+      setReports((prev) => [...prev, ...data.reports]); // No error now
       setCurrentPage(nextPage);
       setTotalPages(data.totalPages);
     } catch (err) {
@@ -73,7 +74,7 @@ export default function ExploreScreen() {
             }
           />
         )}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -91,7 +92,12 @@ export default function ExploreScreen() {
           refreshing ? (
             <ActivityIndicator />
           ) : error !== "" ? (
-            <Text style={{ color: "red", padding: 16 }}>Error: {error}</Text>
+            <View style={{ padding: 16 }}>
+              <Text style={{ color: "red" }}>Error: {error}</Text>
+              <Button mode="outlined" onPress={handleExploreReports} style={{ marginTop: 8 }}>
+                Retry
+              </Button>
+            </View>
           ) : (
             <Text style={{ textAlign: "center", marginTop: 32 }}>
               No reports available.
@@ -104,6 +110,8 @@ export default function ExploreScreen() {
         icon="plus"
         style={styles.fab}
         onPress={() => router.push("/report-form")}
+        accessibilityLabel="Create new report"
+        accessibilityHint="Opens the report submission form"
       />
     </SafeAreaView>
   );
