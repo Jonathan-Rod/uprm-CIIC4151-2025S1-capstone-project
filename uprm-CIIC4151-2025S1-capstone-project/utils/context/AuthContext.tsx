@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const response = await fetch("http://192.168.0.2:5000/me", {
+        const response = await fetch("http://192.168.4.49:5000/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

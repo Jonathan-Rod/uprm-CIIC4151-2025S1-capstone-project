@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { deleteToken, saveRole } from "@/utils/auth";
+import { deleteToken } from "@/utils/auth";
 import { useRouter } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
@@ -9,13 +9,12 @@ export default function LogoutModal() {
   const router = useRouter();
 
   const handleLogOut = async () => {
-    console.log("Log Out");
+  console.log("Log Out");
 
-    await deleteToken();
-    await saveRole("civilian");
+  await deleteToken();
+  router.push("/");
+};
 
-    router.push("/");
-  };
 
   return (
     <ThemedView style={styles.container}>

@@ -24,13 +24,6 @@ CREATE TABLE verifications (
 );
 -- Ignore --
 
--- Removal Pending --
-CREATE TABLE civilians (
-    id INTEGER PRIMARY KEY REFERENCES users(id),
-    suspended BOOLEAN DEFAULT FALSE
-);
--- Removal Pending --
-
 CREATE TABLE administrators (
     id INTEGER PRIMARY KEY REFERENCES users(id),
     department VARCHAR CHECK (department IN ('DTOP', 'LUMA', 'AAA', 'DDS')) NOT NULL

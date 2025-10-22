@@ -1,34 +1,52 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FAB, Text, ActivityIndicator } from "react-native-paper";
+import { FAB, Text, ActivityIndicator, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
 import ReportCard from "@/components/ReportCard";
 import { fetchReports } from "@/utils/api";
-// import type { Report } from "@/types/report"; // Adjust path if needed
-
-type Report = { id: number; title: string; description: string; status: string; createdAt: string; updatedAt: string; pinned: boolean; createdBy: number; validatedBy: number | null; resolvedBy: number | null; category: string; location: string | null; image_url: string | null; rating: number | null; }; type User = { id: number; email: string; admin: boolean; };
+import type { ReportData } from "@/types/interfaces"; // Import correct type
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<ReportData[]>([]); // Typed state
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const limit = 10;
 
   const handleExploreReports = async () => {
     try {
       setError("");
       setRefreshing(true);
-      const data = await fetchReports(); // No pagination
-      setReports(data); // Assumes backend returns an array of reports
+      const data = await fetchReports(1, limit);
+      setReports(data.reports);
+      setCurrentPage(1);
+      setTotalPages(data.totalPages);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
-      }
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const loadMoreReports = async () => {
+    if (currentPage >= totalPages || isLoadingMore || refreshing) return;
+
+    try {
+      setIsLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const data = await fetchReports(nextPage, limit);
+      setReports((prev) => [...prev, ...data.reports]); // No error now
+      setCurrentPage(nextPage);
+      setTotalPages(data.totalPages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -56,18 +74,30 @@ export default function ExploreScreen() {
             }
           />
         )}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleExploreReports}
           />
         }
+        onEndReached={loadMoreReports}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator style={{ paddingVertical: 16 }} />
+          ) : null
+        }
         ListEmptyComponent={
           refreshing ? (
             <ActivityIndicator />
           ) : error !== "" ? (
-            <Text style={{ color: "red", padding: 16 }}>Error: {error}</Text>
+            <View style={{ padding: 16 }}>
+              <Text style={{ color: "red" }}>Error: {error}</Text>
+              <Button mode="outlined" onPress={handleExploreReports} style={{ marginTop: 8 }}>
+                Retry
+              </Button>
+            </View>
           ) : (
             <Text style={{ textAlign: "center", marginTop: 32 }}>
               No reports available.
@@ -80,6 +110,8 @@ export default function ExploreScreen() {
         icon="plus"
         style={styles.fab}
         onPress={() => router.push("/report-form")}
+        accessibilityLabel="Create new report"
+        accessibilityHint="Opens the report submission form"
       />
     </SafeAreaView>
   );

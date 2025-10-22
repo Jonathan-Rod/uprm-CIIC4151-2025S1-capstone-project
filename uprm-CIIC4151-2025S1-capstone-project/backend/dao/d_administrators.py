@@ -20,16 +20,15 @@ class AdministratorsDAO:
             cur.execute(query, (administrator_id,))
             return cur.fetchone()
 
-    def insertAdministrator(self, department):
+    def insertAdministrator(self, user_id, department):
         query = """
             SELECT setval('administrators_id_seq', (SELECT MAX(id) FROM administrators), true);
-            INSERT INTO administrators (department)
-            VALUES (%s)
+            INSERT INTO administrators (id, department)
+            VALUES (%s, %s)
             RETURNING id, department;
         """
-
         with self.conn.cursor() as cur:
-            cur.execute(query, (department))
+            cur.execute(query, (user_id, department))
             self.conn.commit()
             return cur.fetchone()
 
@@ -51,11 +50,16 @@ class AdministratorsDAO:
         query = """
             DELETE FROM administrators WHERE id = %s
             RETURNING id, department;
-            """
-
+        """
         with self.conn.cursor() as cur:
             cur.execute(query, (administrator_id,))
             self.conn.commit()
+            return cur.fetchone()
+
+    def getAdministratorByUserId(self, user_id):
+        query = "SELECT * FROM administrators WHERE id = %s"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id,))
             return cur.fetchone()
 
     def close(self):

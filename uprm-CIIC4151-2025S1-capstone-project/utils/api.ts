@@ -1,17 +1,7 @@
-// TODO: Implement API utility functions here.
+import { getToken } from "@/utils/auth";
+import type { ReportFormData } from "@/types/interfaces"; // Import the correct type
 
-// A list of all the functions that interact with the backend API can be added here.
-/**
- * A basic API structure operations in this project react expo app include:
- * 1. Fetching data from the backend.
- * 2. Submitting data to the backend.
- * 3. Updating existing data.
- * 4. Deleting data.
- * */
-
-import { getToken } from "@/utils/auth"; // Make sure the path is correct
-
-const API_BASE_URL = "http://192.168.0.2:5000"; // Replace with your actual backend URL
+export const API_BASE_URL = "http://192.168.4.49:5000"; // Replace with your actual backend URL
 
 // Generic request wrapper with token support
 async function request(endpoint: string, method = "GET", body?: any) {
@@ -38,6 +28,10 @@ async function request(endpoint: string, method = "GET", body?: any) {
   return response.json();
 }
 
+//
+// REPORTS
+//
+
 // 1. Fetch paginated reports
 export async function fetchReports(page?: number, limit?: number) {
   if (page && limit) {
@@ -49,21 +43,43 @@ export async function fetchReports(page?: number, limit?: number) {
 
 // 2. Fetch single report by ID
 export async function fetchReport(id: number) {
-  return request(`/report/${id}`);
+  return request(`/reports/${id}`);
 }
 
 // 3. Create a new report
-export async function createReport(data: any) {
-  return request("/report", "POST", data);
+export async function createReport(data: ReportFormData) {
+  return request("/reports", "POST", data);
 }
 
 // 4. Update a report
 export async function updateReport(id: number, data: any) {
-  return request(`/report/${id}`, "PUT", data);
+  return request(`/reports/${id}`, "PUT", data);
 }
 
 // 5. Delete a report
 export async function deleteReport(id: number) {
-  return request(`/report/${id}`, "DELETE");
+  return request(`/reports/${id}`, "DELETE");
 }
 
+//
+// USERS
+//
+
+// 6. Login user
+export async function loginUser(data: { email: string; password: string }) {
+  return request("/login", "POST", data);
+}
+
+// 7. Register user
+export async function registerUser(data: {
+  email: string;
+  password: string;
+  admin: boolean;
+}) {
+  return request("/registration", "POST", data);
+}
+
+// 8. Get current user info
+export async function fetchCurrentUser() {
+  return request("/me");
+}

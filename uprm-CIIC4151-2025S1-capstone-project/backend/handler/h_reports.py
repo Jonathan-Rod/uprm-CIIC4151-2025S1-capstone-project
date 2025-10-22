@@ -20,9 +20,21 @@ class ReportsHandler:
         }
 
     def getAllReports(self):
-        reports = ReportsDAO().getAllReports()
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 10))
+        offset = (page - 1) * limit
+
+        dao = ReportsDAO()
+        reports = dao.getReportsPaginated(limit, offset)
+        total_count = dao.getTotalReportCount()
+        total_pages = (total_count + limit - 1) // limit
+
         reports_dict_list = [self.map_to_dict(report) for report in reports]
-        return jsonify(reports_dict_list), HTTP_STATUS.OK
+
+        return jsonify({
+            "reports": reports_dict_list,
+            "totalPages": total_pages
+        }), HTTP_STATUS.OK
 
     def getReportById(self, report_id):
         report = ReportsDAO().getReportById(report_id)
@@ -45,7 +57,6 @@ class ReportsHandler:
         inserted_report = dao.insertReport(title=title, description=description, created_by=user_id)
 
         return jsonify(self.map_to_dict(inserted_report)), 201
-
 
     def updateReport(self, report_id):
         dao = ReportsDAO()

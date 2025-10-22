@@ -1,4 +1,4 @@
-import { ReportData } from "@/mocks/mockReports";
+import { ReportFormData } from "@/types/interfaces"; // Use the correct type for form submission
 import "@expo/vector-icons";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -8,7 +8,7 @@ export default function ReportForm({
   onSubmit,
   loading = false,
 }: {
-  onSubmit?: (data: ReportData) => void;
+  onSubmit?: (data: ReportFormData) => void;
   loading?: boolean;
 }) {
   const [title, setTitle] = useState("");
@@ -34,16 +34,15 @@ export default function ReportForm({
 
   const handleSubmit = () => {
     if (!isFormValid()) return;
-    const reportData: ReportData = {
+    const reportData: ReportFormData = {
       title,
       description,
-      ocurredOn,
-      department: department as ReportData["department"],
+      ocurred_on: ocurredOn,
+      department,
     };
     if (onSubmit) onSubmit(reportData);
   };
 
-  // TODO: #35 SegmentedButtons need to be allocate vertical in each case (variant screen sizes)
   return (
     <View style={styles.container}>
       <TextInput
@@ -51,14 +50,20 @@ export default function ReportForm({
         value={title}
         onChangeText={setTitle}
         mode="outlined"
+        disabled={loading}
       />
 
       <TextInput
         label="Occurred On"
         value={ocurredOn.toISOString().split("T")[0]}
-        onChangeText={(value) => setOcurredOn(new Date(value))}
+        onChangeText={(value) => {
+          const parsed = new Date(value);
+          if (!isNaN(parsed.getTime())) setOcurredOn(parsed);
+        }}
         mode="outlined"
+        disabled={loading}
       />
+
       <View style={styles.chipContainer}>
         {departments.map((dept) => (
           <Chip
@@ -66,6 +71,7 @@ export default function ReportForm({
             selected={department === dept.value}
             onPress={() => setDepartment(dept.value)}
             mode="outlined"
+            accessibilityLabel={`Select department: ${dept.label}`}
           >
             {dept.label}
           </Chip>
@@ -79,6 +85,7 @@ export default function ReportForm({
         mode="outlined"
         multiline
         numberOfLines={5}
+        disabled={loading}
       />
 
       <Button
