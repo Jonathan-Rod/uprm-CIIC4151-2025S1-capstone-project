@@ -1,8 +1,9 @@
-import { ReportFormData } from "@/types/interfaces"; // Use the correct type for form submission
-import "@expo/vector-icons";
-import { useState } from "react";
+// components/ReportForm.tsx
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, Chip, TextInput } from "react-native-paper";
+import DatePicker from "@/components/DatePicker";
+import { ReportFormData } from "@/types/interfaces";
 
 export default function ReportForm({
   onSubmit,
@@ -13,7 +14,7 @@ export default function ReportForm({
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [ocurredOn, setOcurredOn] = useState(new Date());
+  const [ocurredOn, setOcurredOn] = useState(new Date()); // Current date as initial value
   const [department, setDepartment] = useState("");
 
   const departments = [
@@ -28,7 +29,8 @@ export default function ReportForm({
       title.trim() !== "" &&
       description.trim() !== "" &&
       ocurredOn instanceof Date &&
-      department.trim() !== ""
+      department.trim() !== "" &&
+      !isNaN(ocurredOn.getTime())
     );
   };
 
@@ -51,17 +53,13 @@ export default function ReportForm({
         onChangeText={setTitle}
         mode="outlined"
         disabled={loading}
+        style={styles.input}
       />
 
-      <TextInput
+      <DatePicker
+        value={ocurredOn}
+        onChange={setOcurredOn} // This updates the ocurredOn state
         label="Occurred On"
-        value={ocurredOn.toISOString().split("T")[0]}
-        onChangeText={(value) => {
-          const parsed = new Date(value);
-          if (!isNaN(parsed.getTime())) setOcurredOn(parsed);
-        }}
-        mode="outlined"
-        disabled={loading}
       />
 
       <View style={styles.chipContainer}>
@@ -71,6 +69,7 @@ export default function ReportForm({
             selected={department === dept.value}
             onPress={() => setDepartment(dept.value)}
             mode="outlined"
+            style={styles.chip}
             accessibilityLabel={`Select department: ${dept.label}`}
           >
             {dept.label}
@@ -86,6 +85,7 @@ export default function ReportForm({
         multiline
         numberOfLines={5}
         disabled={loading}
+        style={styles.input}
       />
 
       <Button
@@ -93,6 +93,7 @@ export default function ReportForm({
         onPress={handleSubmit}
         disabled={!isFormValid() || loading}
         loading={loading}
+        style={styles.button}
       >
         Submit Report
       </Button>
@@ -110,5 +111,14 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
     marginVertical: 8,
+  },
+  input: {
+    // backgroundColor: 'white',
+  },
+  button: {
+    marginTop: 16,
+  },
+  chip: {
+    margin: 2,
   },
 });

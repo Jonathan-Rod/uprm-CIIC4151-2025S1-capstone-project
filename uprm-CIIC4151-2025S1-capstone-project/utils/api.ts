@@ -1,7 +1,7 @@
 import { getToken } from "@/utils/auth";
 import type { ReportFormData } from "@/types/interfaces"; // Import the correct type
 
-export const API_BASE_URL = "http://192.168.4.49:5000"; // Replace with your actual backend URL
+export const API_BASE_URL = "http://127.0.0.1:5000"; // Replace with your actual backend URL
 
 // Generic request wrapper with token support
 async function request(endpoint: string, method = "GET", body?: any) {

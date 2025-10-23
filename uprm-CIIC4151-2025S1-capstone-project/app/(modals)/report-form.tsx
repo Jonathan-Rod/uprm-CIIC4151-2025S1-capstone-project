@@ -3,15 +3,15 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useRouter } from "expo-router";
 import { StyleSheet, Alert } from "react-native";
-import { createReport } from "@/utils/api"; // Import API function
-import type { ReportFormData } from "@/types/interfaces"; // Use correct type
+import { createReport } from "@/utils/api";
+import type { ReportFormData } from "@/types/interfaces";
 
 export default function ReportFormModal() {
   const router = useRouter();
 
   const handleSubmit = async (data: ReportFormData) => {
     try {
-      await createReport(data); // Send to backend
+      await createReport(data);
       Alert.alert("Success", "Report submitted successfully!");
       router.back();
     } catch (error) {
