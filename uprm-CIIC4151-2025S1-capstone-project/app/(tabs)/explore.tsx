@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FAB, Text, ActivityIndicator, Button } from "react-native-paper";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import ReportCard from "@/components/ReportCard";
-import { fetchReports } from "@/utils/api";
-import type { ReportData } from "@/types/interfaces"; // Import correct type
+import { fetchReports, fetchPinnedReports } from "@/utils/api";
+import type { ReportData } from "@/types/interfaces";
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [reports, setReports] = useState<ReportData[]>([]); // Typed state
+  const [reports, setReports] = useState<ReportData[]>([]);
+  const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set()); // NEW: set of pinned IDs
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,7 +19,17 @@ export default function ExploreScreen() {
 
   const limit = 10;
 
-  const handleExploreReports = async () => {
+  const loadPinnedIds = useCallback(async () => {
+    try {
+      const data = await fetchPinnedReports(); // { reports: Report[] }
+      const ids = new Set<number>((data?.reports ?? []).map((r: any) => r.id));
+      setPinnedIds(ids);
+    } catch {
+      // ignore softly; explore still works even if this fails
+    }
+  }, []);
+
+  const handleExploreReports = useCallback(async () => {
     try {
       setError("");
       setRefreshing(true);
@@ -31,7 +42,7 @@ export default function ExploreScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const loadMoreReports = async () => {
     if (currentPage >= totalPages || isLoadingMore || refreshing) return;
@@ -40,7 +51,7 @@ export default function ExploreScreen() {
       setIsLoadingMore(true);
       const nextPage = currentPage + 1;
       const data = await fetchReports(nextPage, limit);
-      setReports((prev) => [...prev, ...data.reports]); // No error now
+      setReports((prev) => [...prev, ...data.reports]);
       setCurrentPage(nextPage);
       setTotalPages(data.totalPages);
     } catch (err) {
@@ -50,9 +61,28 @@ export default function ExploreScreen() {
     }
   };
 
+  // initial load
   useEffect(() => {
     handleExploreReports();
-  }, []);
+    loadPinnedIds();
+  }, [handleExploreReports, loadPinnedIds]);
+
+  // refresh pinned IDs whenever Explore regains focus (e.g., after pinning elsewhere)
+  useFocusEffect(
+    useCallback(() => {
+      loadPinnedIds();
+    }, [loadPinnedIds])
+  );
+
+  // keep local Set in sync when user toggles a pin on this screen
+  const handlePinChange = (id: number, nextPinned: boolean) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (nextPinned) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -72,13 +102,17 @@ export default function ExploreScreen() {
                 params: { id: item.id },
               })
             }
+            initiallyPinned={pinnedIds.has(item.id)} // tell the card if pinned
+            onPinChange={handlePinChange}            // keep the Set updated
           />
         )}
         keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={handleExploreReports}
+            onRefresh={async () => {
+              await Promise.all([handleExploreReports(), loadPinnedIds()]);
+            }}
           />
         }
         onEndReached={loadMoreReports}

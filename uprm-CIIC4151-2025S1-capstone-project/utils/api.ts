@@ -22,10 +22,15 @@ async function request(endpoint: string, method = "GET", body?: any) {
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);
   }
-  return response.json();
+
+  if (response.status === 204) return null;
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 //
@@ -82,4 +87,30 @@ export async function registerUser(data: {
 // 8. Get current user info
 export async function fetchCurrentUser() {
   return request("/me");
+}
+
+//
+// PINS (new)
+//
+
+// 9. Pin a report (204 No Content)
+export async function pinReport(id: number) {
+  return request(`/reports/${id}/pin`, "POST");
+}
+
+// 10. Unpin a report (204 No Content)
+export async function unpinReport(id: number) {
+  return request(`/reports/${id}/pin`, "DELETE");
+}
+
+// 11. Get current user's pinned reports
+export async function fetchPinnedReports() {
+  // Your backend returns { reports: Report[] }
+  return request("/me/pins");
+}
+
+// 12. Check if a report is pinned by current user
+export async function isReportPinned(id: number) {
+  // Your backend returns { pinned: boolean }
+  return request(`/reports/${id}/is-pinned`);
 }

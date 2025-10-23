@@ -71,5 +71,49 @@ class ReportsDAO:
             self.conn.commit()
             return cur.fetchone()
 
+    # ------------------------------
+    # Pins (new)
+    # ------------------------------
+    def pinReport(self, user_id, report_id) -> bool:
+        query = """
+            INSERT INTO pinned_reports (user_id, report_id)
+            VALUES (%s, %s)
+            ON CONFLICT (user_id, report_id) DO NOTHING;
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, report_id))
+            self.conn.commit()
+            # rowcount will be 1 if insert happened, 0 if conflict (already pinned)
+            return cur.rowcount == 1
+
+    def unpinReport(self, user_id, report_id) -> bool:
+        """
+        Unpins a report for a user. Returns True if a pin was removed, False if it wasn't pinned.
+        """
+        query = "DELETE FROM pinned_reports WHERE user_id = %s AND report_id = %s;"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, report_id))
+            self.conn.commit()
+            return cur.rowcount == 1
+
+    def isPinned(self, user_id, report_id) -> bool:
+        query = "SELECT 1 FROM pinned_reports WHERE user_id = %s AND report_id = %s;"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, report_id))
+            return cur.fetchone() is not None
+
+    def listPinnedForUser(self, user_id, limit=25, offset=0):
+        query = """
+            SELECT r.*
+            FROM pinned_reports p
+            JOIN reports r ON r.id = p.report_id
+            WHERE p.user_id = %s
+            ORDER BY r.created_at DESC
+            LIMIT %s OFFSET %s;
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, limit, offset))
+            return cur.fetchall()
+
     def close(self):
         self.conn.close()

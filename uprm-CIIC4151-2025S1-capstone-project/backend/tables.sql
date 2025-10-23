@@ -55,3 +55,9 @@ CREATE TABLE department_admins (
     department VARCHAR PRIMARY KEY CHECK (department IN ('DTOP', 'LUMA', 'AAA', 'DDS')) NOT NULL,
     admin_id INTEGER REFERENCES administrators(id)
 );
+
+CREATE TABLE pinned_reports (
+  user_id    INTEGER NOT NULL REFERENCES users(id),
+  report_id  INTEGER NOT NULL REFERENCES reports(id),
+  PRIMARY KEY (user_id, report_id)
+);

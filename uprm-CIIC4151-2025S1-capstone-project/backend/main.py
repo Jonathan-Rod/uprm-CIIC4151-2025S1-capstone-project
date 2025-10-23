@@ -75,5 +75,63 @@ def get_current_user():
 
 # ######################################################################################
 
+# --- PIN ROUTES ---
+@app.route("/reports/<int:report_id>/pin", methods=["POST"])
+def pin_report(report_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing token"}), 401
+    token = auth_header.split(" ")[1]
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid or expired token"}), 401
+    user_id = payload["user_id"]
+
+    handler = ReportsHandler()
+    return handler.pinReport(user_id, report_id)
+
+@app.route("/reports/<int:report_id>/pin", methods=["DELETE"])
+def unpin_report(report_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing token"}), 401
+    token = auth_header.split(" ")[1]
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid or expired token"}), 401
+    user_id = payload["user_id"]
+
+    handler = ReportsHandler()
+    return handler.unpinReport(user_id, report_id)
+
+@app.route("/reports/<int:report_id>/is-pinned", methods=["GET"])
+def is_pinned(report_id):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing token"}), 401
+    token = auth_header.split(" ")[1]
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid or expired token"}), 401
+    user_id = payload["user_id"]
+
+    handler = ReportsHandler()
+    return handler.isPinned(user_id, report_id)
+
+@app.route("/me/pins", methods=["GET"])
+def list_my_pins():
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing token"}), 401
+    token = auth_header.split(" ")[1]
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({"error": "Invalid or expired token"}), 401
+    user_id = payload["user_id"]
+
+    handler = ReportsHandler()
+    return handler.getMyPinnedReports(user_id)
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
