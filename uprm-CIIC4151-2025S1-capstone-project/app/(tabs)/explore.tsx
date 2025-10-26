@@ -4,12 +4,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { FAB, Text, ActivityIndicator, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
 import ReportCard from "@/components/ReportCard";
-import { fetchReports } from "@/utils/api";
-import type { ReportData } from "@/types/interfaces"; // Import correct type
+import { getReports } from "@/utils/api";
+import type { ReportCategory, ReportData } from "@/types/interfaces";
+import { useAppColors } from "@/hooks/useAppColors";
 
 export default function ExploreScreen() {
   const router = useRouter();
-  const [reports, setReports] = useState<ReportData[]>([]); // Typed state
+  const { colors } = useAppColors();
+  const [reports, setReports] = useState<ReportData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,117 +20,205 @@ export default function ExploreScreen() {
 
   const limit = 10;
 
-  const handleExploreReports = async () => {
+  const handleExploreReports = async (page = 1, isRefresh = true) => {
     try {
-      setError("");
-      setRefreshing(true);
-      const data = await fetchReports(1, limit);
-      setReports(data.reports);
-      setCurrentPage(1);
-      setTotalPages(data.totalPages);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      if (isRefresh) {
+        setError("");
+        setRefreshing(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const data = await getReports(page, limit);
+
+      if (isRefresh) {
+        setReports(data.reports || []);
+      } else {
+        setReports((prev) => [...prev, ...(data.reports || [])]);
+      }
+
+      setCurrentPage(page);
+      setTotalPages(data.totalPages || 1);
+    } catch (err: any) {
+      setError(err.message || "Failed to load reports");
+      console.error("Error loading reports:", err);
     } finally {
       setRefreshing(false);
+      setIsLoadingMore(false);
     }
   };
 
   const loadMoreReports = async () => {
     if (currentPage >= totalPages || isLoadingMore || refreshing) return;
 
-    try {
-      setIsLoadingMore(true);
-      const nextPage = currentPage + 1;
-      const data = await fetchReports(nextPage, limit);
-      setReports((prev) => [...prev, ...data.reports]); // No error now
-      setCurrentPage(nextPage);
-      setTotalPages(data.totalPages);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
-    } finally {
-      setIsLoadingMore(false);
-    }
+    const nextPage = currentPage + 1;
+    await handleExploreReports(nextPage, false);
+  };
+
+  const onRefresh = () => {
+    handleExploreReports(1, true);
   };
 
   useEffect(() => {
-    handleExploreReports();
+    handleExploreReports(1, true);
   }, []);
 
+  const handleReportPress = (reportId: number) => {
+    router.push({
+      pathname: "/(modals)/report-view",
+      params: { id: reportId.toString() },
+    });
+  };
+
+  const handleCreateReport = () => {
+    router.push("/(modals)/report-form");
+  };
+
+  const renderReportItem = ({ item }: { item: ReportData }) => (
+    <ReportCard
+      report={{ ...item, category: item.category as ReportCategory }}
+      onPress={() => handleReportPress(item.id)}
+    />
+  );
+
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+
+    return (
+      <ActivityIndicator
+        style={{ paddingVertical: 16 }}
+        size="small"
+        color={colors.primary}
+      />
+    );
+  };
+
+  const renderEmptyComponent = () => {
+    if (refreshing) {
+      return (
+        <ActivityIndicator
+          size="large"
+          style={{ marginTop: 32 }}
+          color={colors.primary}
+        />
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error: {error}</Text>
+          <Button
+            mode="outlined"
+            onPress={onRefresh}
+            style={styles.retryButton}
+            textColor={colors.error}
+          >
+            Retry
+          </Button>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>No reports available.</Text>
+        <Text style={styles.emptySubtext}>
+          Be the first to create a report!
+        </Text>
+      </View>
+    );
+  };
+
+  const styles = createStyles(colors);
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.container}>
       <Text variant="headlineMedium" style={styles.header}>
-        Explore
+        Explore Reports
       </Text>
 
       <FlatList
         contentContainerStyle={styles.listContainer}
         data={reports}
-        renderItem={({ item }) => (
-          <ReportCard
-            report={item}
-            onPress={() =>
-              router.push({
-                pathname: "/report-view",
-                params: { id: item.id },
-              })
-            }
-          />
-        )}
-        keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
+        renderItem={renderReportItem}
+        keyExtractor={(item) => item.id.toString()}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={handleExploreReports}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         onEndReached={loadMoreReports}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <ActivityIndicator style={{ paddingVertical: 16 }} />
-          ) : null
-        }
-        ListEmptyComponent={
-          refreshing ? (
-            <ActivityIndicator />
-          ) : error !== "" ? (
-            <View style={{ padding: 16 }}>
-              <Text style={{ color: "red" }}>Error: {error}</Text>
-              <Button mode="outlined" onPress={handleExploreReports} style={{ marginTop: 8 }}>
-                Retry
-              </Button>
-            </View>
-          ) : (
-            <Text style={{ textAlign: "center", marginTop: 32 }}>
-              No reports available.
-            </Text>
-          )
-        }
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmptyComponent}
+        showsVerticalScrollIndicator={false}
       />
 
       <FAB
         icon="plus"
-        style={styles.fab}
-        onPress={() => router.push("/report-form")}
+        style={[styles.fab, { backgroundColor: colors.button.primary }]}
+        onPress={handleCreateReport}
         accessibilityLabel="Create new report"
         accessibilityHint="Opens the report submission form"
+        color={colors.button.text}
       />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    margin: 16,
-  },
-  listContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-  },
-  fab: {
-    position: "absolute",
-    margin: 16,
-    right: 0,
-    bottom: 0,
-  },
-});
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      margin: 16,
+      fontWeight: "bold",
+      color: colors.text,
+      textAlign: "center",
+    },
+    listContainer: {
+      paddingHorizontal: 16,
+      paddingBottom: 32,
+      flexGrow: 1,
+    },
+    errorContainer: {
+      padding: 16,
+      alignItems: "center",
+    },
+    errorText: {
+      textAlign: "center",
+      marginBottom: 12,
+      color: colors.error,
+    },
+    retryButton: {
+      marginTop: 8,
+      borderColor: colors.error,
+    },
+    emptyContainer: {
+      alignItems: "center",
+      paddingVertical: 32,
+    },
+    emptyText: {
+      textAlign: "center",
+      fontSize: 16,
+      marginBottom: 8,
+      color: colors.textSecondary,
+    },
+    emptySubtext: {
+      textAlign: "center",
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    fab: {
+      position: "absolute",
+      margin: 16,
+      right: 0,
+      bottom: 0,
+    },
+  });

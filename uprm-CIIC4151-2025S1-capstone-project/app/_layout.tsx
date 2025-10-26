@@ -1,89 +1,183 @@
-// TODO
-// Hide header in the login page
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   navigationDarkTheme,
   navigationLightTheme,
 } from "@/theme/navigation-theme";
 import { paperDarkTheme, paperLightTheme } from "@/theme/paper-theme";
-import { getToken } from "@/utils/auth";
+import { getStoredCredentials, clearCredentials } from "@/utils/auth";
 import { ThemeProvider } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { PaperProvider } from "react-native-paper";
+import { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import {
+  ActivityIndicator,
+  PaperProvider,
+  Text,
+  Button,
+} from "react-native-paper";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AuthProvider, useAuth } from "@/utils/context/AuthContext";
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-// This inner component uses AuthContext
-function AppContent() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   const paperTheme = colorScheme === "dark" ? paperDarkTheme : paperLightTheme;
   const navigationTheme =
     colorScheme === "dark" ? navigationDarkTheme : navigationLightTheme;
 
   const router = useRouter();
-  const { user } = useAuth();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [debugInfo, setDebugInfo] = useState("");
+
+  const forceReset = async () => {
+    await clearCredentials();
+    router.replace("/");
+  };
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
-      const token = await getToken();
-      // if neither a token nor user info exists → redirect to login
-      if (!token || !user) {
-        router.replace("/");
+      try {
+        console.log("🔍 Starting auth check...");
+        setDebugInfo("Checking stored credentials...");
+
+        const credentials = await getStoredCredentials();
+        console.log("📝 Credentials found:", credentials);
+
+        if (!isMounted) return;
+
+        if (credentials) {
+          setDebugInfo(`Found credentials for: ${credentials.email}`);
+          console.log("✅ Credentials found, redirecting to home...");
+
+          // Small delay to ensure navigation is ready
+          setTimeout(() => {
+            if (isMounted) {
+              router.replace("/(tabs)/home");
+              console.log("🎯 Navigation to home completed");
+            }
+          }, 100);
+        } else {
+          setDebugInfo("No credentials found");
+          console.log("❌ No credentials found, redirecting to login...");
+          setTimeout(() => {
+            if (isMounted) {
+              router.replace("/");
+              console.log("🎯 Navigation to login completed");
+            }
+          }, 100);
+        }
+      } catch (error) {
+        console.error("🚨 Error checking auth:", error);
+        setDebugInfo(
+          `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+        if (isMounted) {
+          router.replace("/");
+        }
+      } finally {
+        if (isMounted) {
+          console.log("🏁 Auth check completed");
+          setIsCheckingAuth(false);
+        }
       }
     };
+
+    // Add a timeout fallback
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log("🕒 Auth check timeout - forcing completion");
+        setIsCheckingAuth(false);
+      }
+    }, 3000);
+
     checkAuth();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [router]);
+
+  // Show loading screen while checking auth to avoid flash
+  if (isCheckingAuth) {
+    return (
+      <SafeAreaProvider>
+        <PaperProvider theme={paperTheme}>
+          <ThemeProvider value={navigationTheme}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" />
+              <Text style={styles.loadingText}>Checking authentication...</Text>
+              <Text style={styles.debugText}>{debugInfo}</Text>
+              <Button
+                mode="outlined"
+                onPress={forceReset}
+                style={styles.resetButton}
+              >
+                Reset App
+              </Button>
+            </View>
+          </ThemeProvider>
+        </PaperProvider>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={navigationTheme}>
           <Stack>
-            {/* <Stack.Screen name="sign-screen" options={{ headerShown: false }} /> */}
-            <Stack.Screen name="index" options={{ headerShown: false }} /> {/* Login screen header hidden */}
+            <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="(modals)/about-us"
-              options={{ presentation: "modal", title: "about-us" }}
+              options={{ presentation: "modal", title: "About Us" }}
+            />
+            <Stack.Screen
+              name="(modals)/account-security"
+              options={{ presentation: "modal", title: "Account Security" }}
             />
             <Stack.Screen
               name="(modals)/contact-support"
-              options={{ presentation: "modal", title: "contact-support" }}
+              options={{ presentation: "modal", title: "Contact Support" }}
             />
             <Stack.Screen
               name="(modals)/delete-account"
-              options={{ presentation: "modal", title: "delete-account" }}
+              options={{ presentation: "modal", title: "Delete Account" }}
             />
             <Stack.Screen
               name="(modals)/logout"
-              options={{ presentation: "modal", title: "logout" }}
+              options={{ presentation: "modal", title: "Logout" }}
             />
             <Stack.Screen
               name="(modals)/modal"
-              options={{ presentation: "modal", title: "modal" }}
+              options={{ presentation: "modal", title: "Modal" }}
             />
             <Stack.Screen
               name="(modals)/privacy-policy"
-              options={{ presentation: "modal", title: "privacy-policy" }}
+              options={{ presentation: "modal", title: "Privacy Policy" }}
             />
             <Stack.Screen
               name="(modals)/report-form"
-              options={{ presentation: "modal", title: "report-form" }}
+              options={{ presentation: "modal", title: "Create Report" }}
             />
             <Stack.Screen
               name="(modals)/report-view"
-              options={{ presentation: "modal", title: "report-view" }}
+              options={{ presentation: "modal", title: "Report Details" }}
             />
             <Stack.Screen
               name="(modals)/terms-and-conditions"
-              options={{ presentation: "modal", title: "terms-and-conditions" }}
+              options={{ presentation: "modal", title: "Terms & Conditions" }}
+            />
+            <Stack.Screen
+              name="(modals)/update-profile"
+              options={{ presentation: "modal", title: "Update Profile" }}
             />
           </Stack>
           <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
@@ -93,11 +187,25 @@ function AppContent() {
   );
 }
 
-// Wrap everything with AuthProvider
-export default function RootLayout() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-}
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  debugText: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  resetButton: {
+    marginTop: 20,
+  },
+});

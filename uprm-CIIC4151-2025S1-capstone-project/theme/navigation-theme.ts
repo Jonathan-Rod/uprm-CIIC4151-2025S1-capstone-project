@@ -8,25 +8,28 @@ export const navigationLightTheme = {
   ...NavigationLight,
   colors: {
     ...NavigationLight.colors,
-    primary: Colors.light.tint,
+    primary: Colors.light.primary,
     background: Colors.light.background,
-    text: Colors.light.text,
     card: Colors.light.card,
-    border: Colors.light.icon,
-    notification: Colors.light.alert,
+    text: Colors.light.text,
+    border: Colors.light.border,
+    notification: Colors.light.error,
   },
 };
-
 
 export const navigationDarkTheme = {
   ...NavigationDark,
   colors: {
     ...NavigationDark.colors,
-    primary: Colors.dark.tint,
+    primary: Colors.dark.primary,
     background: Colors.dark.background,
-    text: Colors.dark.text,
     card: Colors.dark.card,
-    border: Colors.dark.icon,
-    notification: Colors.dark.alert,
+    text: Colors.dark.text,
+    border: Colors.dark.border,
+    notification: Colors.dark.error,
   },
 };
+
+export type NavigationTheme =
+  | typeof navigationLightTheme
+  | typeof navigationDarkTheme;
