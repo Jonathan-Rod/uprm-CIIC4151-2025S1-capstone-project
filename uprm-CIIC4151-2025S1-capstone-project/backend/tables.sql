@@ -1,6 +1,8 @@
 -- Drop tables in correct order to handle foreign key dependencies
 DROP TABLE IF EXISTS pinned_reports;
 
+DROP TABLE IF EXISTS civilians;
+
 DROP TABLE IF EXISTS department_admins;
 
 DROP TABLE IF EXISTS reports;
