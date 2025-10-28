@@ -2,7 +2,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useRouter } from "expo-router";
 import { StyleSheet, View, ScrollView } from "react-native";
-import { Button, Text } from "react-native-paper";
+import { Button, List, Text, Icon, Divider } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AboutUsModal() {
@@ -20,9 +20,9 @@ export default function AboutUsModal() {
           </Text>
 
           <View style={styles.content}>
-            <Text variant="headlineSmall" style={styles.subtitle}>
+            {/* <Text variant="headlineSmall" style={styles.subtitle}>
               Welcome to Our Reporting Platform
-            </Text>
+            </Text> */}
 
             <Text variant="bodyMedium" style={styles.text}>
               We are committed to creating safer, more responsive communities
@@ -32,9 +32,18 @@ export default function AboutUsModal() {
             </Text>
 
             <View style={styles.section}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                🎯 Our Mission
-              </Text>
+              <List.Item
+                title="Our Mission"
+                left={() => (
+                  <Icon
+                    source="bullseye-arrow"
+                    size={22}
+                    color={colors.icon}
+                  />
+                )}
+                titleStyle={styles.sectionTitle}
+                style={{ paddingHorizontal: 0 }}
+              />
               <Text variant="bodyMedium" style={styles.text}>
                 To empower communities by providing a transparent, efficient,
                 and user-friendly platform for reporting and resolving local
@@ -43,9 +52,18 @@ export default function AboutUsModal() {
             </View>
 
             <View style={styles.section}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                💡 What We Do
-              </Text>
+              <List.Item
+                title="What We Do"
+                left={() => (
+                  <Icon
+                    source="lightbulb-question"
+                    size={22}
+                    color={colors.icon}
+                  />
+                )}
+                titleStyle={styles.sectionTitle}
+                style={{ paddingHorizontal: 0 }}
+              />
               <Text variant="bodyMedium" style={styles.text}>
                 • Enable real-time issue reporting with photo evidence{"\n"}•
                 Provide transparent tracking of report status{"\n"}• Facilitate
@@ -55,9 +73,18 @@ export default function AboutUsModal() {
             </View>
 
             <View style={styles.section}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                🌟 Our Values
-              </Text>
+              <List.Item
+                title="Our Values"
+                left={() => (
+                  <Icon
+                    source="star"
+                    size={22}
+                    color={colors.icon}
+                  />
+                )}
+                titleStyle={styles.sectionTitle}
+                style={{ paddingHorizontal: 0 }}
+              />
               <Text variant="bodyMedium" style={styles.text}>
                 • <Text style={styles.bold}>Transparency:</Text> Clear
                 communication and status updates{"\n"}•{" "}
@@ -71,9 +98,18 @@ export default function AboutUsModal() {
             </View>
 
             <View style={styles.section}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                📊 Our Impact
-              </Text>
+              <List.Item
+                title="Our Impact"
+                left={() => (
+                  <Icon
+                    source="chart-bar"
+                    size={22}
+                    color={colors.icon}
+                  />
+                )}
+                titleStyle={styles.sectionTitle}
+                style={{ paddingHorizontal: 0 }}
+              />
               <Text variant="bodyMedium" style={styles.text}>
                 Since our launch, we&apos;ve helped resolve thousands of
                 community issues, from infrastructure problems to environmental
@@ -82,10 +118,21 @@ export default function AboutUsModal() {
               </Text>
             </View>
 
+            <Divider style={styles.divider} />
+
             <View style={styles.contactInfo}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                📞 Get In Touch
-              </Text>
+              <List.Item
+                title="Get In Touch"
+                left={() => (
+                  <Icon
+                    source="phone"
+                    size={22}
+                    color={colors.icon}
+                  />
+                )}
+                titleStyle={styles.sectionTitle}
+                style={{ paddingHorizontal: 0 }}
+              />
               <Text variant="bodyMedium" style={styles.text}>
                 Have questions or suggestions? We&apos;d love to hear from you!
                 {"\n"}
@@ -99,7 +146,7 @@ export default function AboutUsModal() {
           </View>
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={() => router.back()}
@@ -109,7 +156,7 @@ export default function AboutUsModal() {
           >
             Back to Settings
           </Button>
-        </View>
+        </View> */}
       </ThemedView>
     </SafeAreaView>
   );
@@ -124,6 +171,11 @@ const createStyles = (colors: any) =>
     container: {
       flex: 1,
     },
+    divider: {
+      marginVertical: 16,
+      backgroundColor: colors.divider,
+    },
+
     scrollContent: {
       flexGrow: 1,
       padding: 20,

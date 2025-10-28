@@ -214,7 +214,10 @@ const createStyles = (colors: any) =>
       fontWeight: "500",
     },
     listItemDescription: {
-      color: colors.textSecondary,
+      // color: colors.textSecondary,
+      color: colors.textMuted,
+      fontWeight: "100",
+      fontSize: 12,
     },
     divider: {
       marginVertical: 16,

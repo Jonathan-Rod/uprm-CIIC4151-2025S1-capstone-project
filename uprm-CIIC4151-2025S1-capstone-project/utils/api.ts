@@ -1,7 +1,7 @@
 import type { ReportFormData } from "@/types/interfaces";
 import { getStoredCredentials } from "@/utils/auth"; // Import the credentials function
 
-export const API_BASE_URL = "http://127.0.0.1:5000";
+export const API_BASE_URL = "http://192.168.4.49:5000";
 
 async function request(endpoint: string, method = "GET", body?: any) {
   const headers: Record<string, string> = {

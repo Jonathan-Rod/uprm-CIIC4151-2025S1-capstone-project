@@ -61,7 +61,7 @@ export default function PrivacyPolicyModal() {
 
           <View style={styles.noticeBox}>
             <Text variant="bodySmall" style={styles.noticeText}>
-              🔒 <Text style={styles.bold}>Privacy Commitment:</Text> We are
+              <Text style={styles.bold}>Privacy Commitment:</Text> We are
               committed to protecting your privacy and being transparent about
               our data practices. This summary covers key aspects of our privacy
               policy.
@@ -95,7 +95,7 @@ export default function PrivacyPolicyModal() {
           </View>
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={() => router.back()}
@@ -105,7 +105,7 @@ export default function PrivacyPolicyModal() {
           >
             Back to Settings
           </Button>
-        </View>
+        </View> */}
       </ThemedView>
     </SafeAreaView>
   );

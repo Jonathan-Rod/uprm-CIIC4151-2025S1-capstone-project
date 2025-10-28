@@ -108,10 +108,10 @@ export default function AccountSecurityModal() {
             Account Security
           </Text>
 
-          <Text variant="bodyMedium" style={styles.introText}>
+          {/* <Text variant="bodyMedium" style={styles.introText}>
             Manage your account security preferences and privacy settings to
             keep your information safe and secure.
-          </Text>
+          </Text> */}
 
           {/* Authentication Settings */}
           <View style={[styles.section, { borderLeftColor: colors.primary }]}>
@@ -119,7 +119,7 @@ export default function AccountSecurityModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
             >
-              🔐 Authentication
+              Authentication
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               Configure how you authenticate and access your account for
@@ -187,15 +187,13 @@ export default function AccountSecurityModal() {
             />
           </View>
 
-          <Divider style={styles.divider} />
-
           {/* Notification Settings */}
           <View style={[styles.section, { borderLeftColor: colors.info }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.info }]}
             >
-              🔔 Notifications
+              Notifications
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               Control how you receive security alerts and important
@@ -253,7 +251,7 @@ export default function AccountSecurityModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.warning }]}
             >
-              ⚡ Security Actions
+              Security Actions
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               Manage your account security and access additional security
@@ -294,15 +292,13 @@ export default function AccountSecurityModal() {
             />
           </View>
 
-          <Divider style={styles.divider} />
-
           {/* Security Status */}
           <View style={[styles.section, { borderLeftColor: colors.success }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.success }]}
             >
-              🛡️ Security Status
+              Security Status
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               Overview of your current account security status and
@@ -340,15 +336,13 @@ export default function AccountSecurityModal() {
             </View>
           </View>
 
-          <Divider style={styles.divider} />
-
           {/* Security Tips */}
-          <View style={[styles.section, { borderLeftColor: colors.secondary }]}>
+          {/* <View style={[styles.section, { borderLeftColor: colors.secondary }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.secondary }]}
             >
-              💡 Security Recommendations
+              Security Recommendations
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               • Enable two-factor authentication for enhanced account protection
@@ -359,7 +353,7 @@ export default function AccountSecurityModal() {
               security patches{"\n"}• Be cautious of suspicious emails,
               messages, or login attempts
             </Text>
-          </View>
+          </View> */}
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
@@ -385,7 +379,7 @@ export default function AccountSecurityModal() {
           </View>
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={() => router.back()}
@@ -395,7 +389,7 @@ export default function AccountSecurityModal() {
           >
             Back to Settings
           </Button>
-        </View>
+        </View> */}
       </ThemedView>
     </SafeAreaView>
   );

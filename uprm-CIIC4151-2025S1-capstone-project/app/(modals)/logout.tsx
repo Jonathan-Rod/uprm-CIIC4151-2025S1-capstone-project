@@ -38,19 +38,19 @@ export default function LogoutModal() {
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="headlineMedium" style={styles.title}>
-              🔐 Logout
+              Logout
             </Text>
-            <Text variant="bodyMedium" style={styles.message}>
+            {/* <Text variant="bodyMedium" style={styles.message}>
               Are you sure you want to log out of your account?
-            </Text>
+            </Text> */}
 
-            <View style={styles.infoBox}>
+            {/* <View style={styles.infoBox}>
               <Text variant="bodySmall" style={styles.infoText}>
                 • You&apos;ll need to sign in again to access your account{"\n"}
                 • Your data will be safely preserved{"\n"}• Reports and
                 preferences will be saved
               </Text>
-            </View>
+            </View> */}
 
             <View style={styles.buttons}>
               <Button

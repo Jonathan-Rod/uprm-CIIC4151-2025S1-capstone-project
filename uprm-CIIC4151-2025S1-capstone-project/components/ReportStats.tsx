@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { Text, Card } from "react-native-paper";
+import { Text, Card, Icon } from "react-native-paper";
 import type { ReportStatsProps } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
 
@@ -17,25 +17,21 @@ export default function ReportStats({
       label: "Filed",
       value: filed,
       color: colors.primary,
-      icon: "📤",
     },
     {
       label: "Resolved",
       value: resolved,
       color: colors.success,
-      icon: "✅",
     },
     {
       label: "Pending",
       value: pending,
       color: colors.warning,
-      icon: "⏳",
     },
     {
       label: "Pinned",
       value: pinned,
-      color: colors.info,
-      icon: "📌",
+      color: "#9C27B0",
     },
   ];
 
@@ -46,14 +42,17 @@ export default function ReportStats({
   return (
     <Card style={styles.card}>
       <Card.Content>
-        <Text variant="titleMedium" style={styles.title}>
-          📊 Report Statistics
-        </Text>
+        <View style={styles.header}>
+          <Icon source="chart-bar" size={22} color={colors.primary} />
+          <Text variant="titleMedium" style={styles.title}>
+            Report Statistics
+          </Text>
+        </View>
 
         <View style={styles.statsGrid}>
           {stats.map((stat) => (
             <View key={stat.label} style={styles.statItem}>
-              <Text style={styles.statIcon}>{stat.icon}</Text>
+              {/* <Text style={styles.statIcon}>{stat.icon}</Text> */}
               <Text style={[styles.statValue, { color: stat.color }]}>
                 {stat.value}
               </Text>
@@ -101,10 +100,15 @@ const createStyles = (colors: any) =>
       shadowRadius: 2,
       backgroundColor: colors.card,
     },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      marginBottom: 20,
+    },
     title: {
       fontWeight: "600",
-      marginBottom: 20,
-      textAlign: "center",
       fontSize: 16,
       color: colors.text,
     },

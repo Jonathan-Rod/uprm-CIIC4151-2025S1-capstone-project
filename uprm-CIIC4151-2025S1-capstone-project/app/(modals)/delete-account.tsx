@@ -47,7 +47,7 @@ export default function DeleteAccountModal() {
           <Card style={styles.card}>
             <Card.Content>
               <Text variant="headlineMedium" style={styles.title}>
-                🚨 Delete Account
+                Delete Account
               </Text>
 
               <Text variant="bodyMedium" style={styles.warningText}>
@@ -73,7 +73,7 @@ export default function DeleteAccountModal() {
                 </Text>
               </View>
 
-              <View style={styles.suggestions}>
+              {/* <View style={styles.suggestions}>
                 <Text variant="titleSmall" style={styles.suggestionTitle}>
                   Consider these alternatives:
                 </Text>
@@ -86,7 +86,7 @@ export default function DeleteAccountModal() {
                 <Text style={styles.suggestionItem}>
                   • Temporarily deactivate your account
                 </Text>
-              </View>
+              </View> */}
 
               <View style={styles.buttons}>
                 <Button

@@ -103,15 +103,15 @@ export default function ContactSupportModal() {
             Contact Support
           </Text>
 
-          <Text variant="bodyMedium" style={styles.subtitle}>
+          {/* <Text variant="bodyMedium" style={styles.subtitle}>
             We&apos;re here to help! Choose the best way to get in touch with
             our support team.
-          </Text>
+          </Text> */}
 
           <Card style={styles.contactCard}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                📧 Email Support
+                Email Support
               </Text>
               <Text variant="bodyMedium" style={styles.cardText}>
                 Send us a detailed description of your issue. We typically
@@ -133,7 +133,7 @@ export default function ContactSupportModal() {
           <Card style={styles.contactCard}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                📞 Phone Support
+                Phone Support
               </Text>
               <Text variant="bodyMedium" style={styles.cardText}>
                 Available Monday-Friday, 9AM-5PM EST for immediate assistance.
@@ -153,7 +153,7 @@ export default function ContactSupportModal() {
           <Card style={styles.contactCard}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                ❓ FAQ & Help Center
+                FAQ & Help Center
               </Text>
               <Text variant="bodyMedium" style={styles.cardText}>
                 Find answers to common questions and troubleshooting guides.
@@ -173,7 +173,7 @@ export default function ContactSupportModal() {
           <Card style={styles.contactCard}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.cardTitle}>
-                🌐 Website Support
+                Website Support
               </Text>
               <Text variant="bodyMedium" style={styles.cardText}>
                 Visit our website for additional resources and support options.
@@ -195,7 +195,7 @@ export default function ContactSupportModal() {
           <Card style={styles.emergencyCard}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.emergencyTitle}>
-                🚨 Emergency Contact
+                Emergency Contact
               </Text>
               <Text variant="bodyMedium" style={styles.emergencyText}>
                 For urgent community issues requiring immediate attention,
@@ -213,18 +213,21 @@ export default function ContactSupportModal() {
             </Card.Content>
           </Card>
 
-          <View style={styles.infoSection}>
-            <Text variant="titleSmall" style={styles.infoTitle}>
+          <Card style={styles.contactCard}>
+            <Card.Content>
+            <Text variant="titleSmall" style={styles.cardTitle}>
               What to Include in Your Support Request:
             </Text>
-            <Text variant="bodyMedium" style={styles.infoText}>
+            <Text variant="bodyMedium" style={styles.cardText}>
               • Detailed description of the issue{"\n"}• Steps to reproduce the
               problem{"\n"}• Screenshots (if applicable){"\n"}• Device and app
               version information{"\n"}• Your contact email
             </Text>
-          </View>
+          </Card.Content>
+          </Card>
 
-          <View style={styles.hoursSection}>
+
+          {/* <View style={styles.hoursSection}>
             <Text variant="titleSmall" style={styles.hoursTitle}>
               Support Hours
             </Text>
@@ -233,10 +236,10 @@ export default function ContactSupportModal() {
               📞 Phone: Mon-Fri, 9AM-5PM EST{"\n"}
               🕒 Live Chat: Mon-Fri, 8AM-6PM EST
             </Text>
-          </View>
+          </View> */}
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button
             mode="outlined"
             onPress={() => router.back()}
@@ -246,7 +249,7 @@ export default function ContactSupportModal() {
           >
             Back to Settings
           </Button>
-        </View>
+        </View> */}
       </ThemedView>
     </SafeAreaView>
   );
@@ -308,7 +311,6 @@ const createStyles = (colors: any) =>
     emergencyTitle: {
       marginBottom: 8,
       fontWeight: "600",
-      color: colors.error,
     },
     emergencyText: {
       marginBottom: 16,

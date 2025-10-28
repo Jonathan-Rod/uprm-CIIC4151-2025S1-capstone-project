@@ -159,10 +159,10 @@ export default function UpdateProfileModal() {
             Update Profile
           </Text>
 
-          <Text variant="bodyMedium" style={styles.introText}>
+          {/* <Text variant="bodyMedium" style={styles.introText}>
             Manage your account information and security settings. Keep your
             profile up to date to ensure the best experience.
-          </Text>
+          </Text> */}
 
           {/* Email Section */}
           <View style={[styles.section, { borderLeftColor: colors.primary }]}>
@@ -170,7 +170,7 @@ export default function UpdateProfileModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
             >
-              📧 Email Address
+              Email Address
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               Update your email address. You&apos;ll need to verify the new
@@ -196,15 +196,13 @@ export default function UpdateProfileModal() {
             ) : null}
           </View>
 
-          <Divider style={styles.divider} />
-
           {/* Password Section */}
           <View style={[styles.section, { borderLeftColor: colors.info }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.info }]}
             >
-              🔒 Change Password
+              Change Password
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               Update your password to keep your account secure. Your new
@@ -275,7 +273,7 @@ export default function UpdateProfileModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.success }]}
             >
-              💡 Security Tips
+              Security Tips
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               • Use a strong, unique password that you don&apos;t use elsewhere
@@ -309,7 +307,7 @@ export default function UpdateProfileModal() {
           </View>
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={() => router.back()}
@@ -319,7 +317,7 @@ export default function UpdateProfileModal() {
           >
             Back to Settings
           </Button>
-        </View>
+        </View> */}
       </ThemedView>
     </SafeAreaView>
   );

@@ -2,7 +2,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useRouter } from "expo-router";
 import { StyleSheet, View, ScrollView, Linking } from "react-native";
-import { Button, Text, Divider } from "react-native-paper";
+import { Button, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TermsAndConditionsModal() {
@@ -42,8 +42,11 @@ export default function TermsAndConditionsModal() {
           </Text>
 
           {/* Acceptance of Terms */}
-          <View style={styles.section}>
-            <Text variant="titleSmall" style={styles.sectionTitle}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
+            <Text
+              variant="titleSmall"
+              style={[styles.sectionTitle, { color: colors.primary }]}
+            >
               1. Acceptance of Terms
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
@@ -68,10 +71,10 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* User Responsibilities */}
-          <View style={[styles.section, { borderLeftColor: colors.info }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.info }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               3. User Responsibilities
             </Text>
@@ -87,13 +90,11 @@ export default function TermsAndConditionsModal() {
             </Text>
           </View>
 
-          <Divider style={styles.divider} />
-
           {/* Privacy */}
-          <View style={[styles.section, { borderLeftColor: colors.secondary }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.secondary }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               4. Privacy Policy
             </Text>
@@ -106,10 +107,10 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Intellectual Property */}
-          <View style={[styles.section, { borderLeftColor: colors.warning }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.warning }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               5. Intellectual Property
             </Text>
@@ -122,10 +123,10 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Termination */}
-          <View style={[styles.section, { borderLeftColor: colors.error }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.error }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               6. Termination
             </Text>
@@ -138,10 +139,10 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Limitation of Liability */}
-          <View style={[styles.section, { borderLeftColor: colors.tertiary }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.tertiary }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               7. Limitation of Liability
             </Text>
@@ -155,10 +156,10 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Governing Law */}
-          <View style={[styles.section, { borderLeftColor: colors.info }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.info }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               8. Governing Law
             </Text>
@@ -186,10 +187,10 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Contact Information */}
-          <View style={[styles.section, { borderLeftColor: colors.success }]}>
+          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
-              style={[styles.sectionTitle, { color: colors.success }]}
+              style={[styles.sectionTitle, { color: colors.primary }]}
             >
               10. Contact Information
             </Text>
@@ -240,7 +241,7 @@ export default function TermsAndConditionsModal() {
           </View>
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={() => router.back()}
@@ -250,7 +251,7 @@ export default function TermsAndConditionsModal() {
           >
             Back to Settings
           </Button>
-        </View>
+        </View> */}
       </ThemedView>
     </SafeAreaView>
   );
@@ -294,7 +295,7 @@ const createStyles = (colors: any) =>
       padding: 16,
       borderRadius: 8,
       borderLeftWidth: 4,
-      borderLeftColor: colors.success,
+      borderLeftColor: colors.primary,
       shadowColor: colors.shadow || "#000",
       shadowOffset: {
         width: 0,
@@ -307,7 +308,7 @@ const createStyles = (colors: any) =>
     sectionTitle: {
       marginBottom: 12,
       fontWeight: "600",
-      color: colors.success,
+      color: colors.primary,
     },
     sectionText: {
       lineHeight: 20,
@@ -316,11 +317,6 @@ const createStyles = (colors: any) =>
     bold: {
       fontWeight: "600",
       color: colors.text,
-    },
-    divider: {
-      marginVertical: 8,
-      backgroundColor: colors.divider,
-      height: 1,
     },
     acknowledgmentBox: {
       backgroundColor: colors.successContainer,
@@ -358,6 +354,6 @@ const createStyles = (colors: any) =>
     },
     backButton: {
       borderRadius: 8,
-      backgroundColor: colors.button.primary,
+      backgroundColor: colors.button?.primary,
     },
   });
