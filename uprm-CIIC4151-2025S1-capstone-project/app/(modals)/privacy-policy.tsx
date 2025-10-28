@@ -1,12 +1,11 @@
 import { ThemedView } from "@/components/themed-view";
 import { useAppColors } from "@/hooks/useAppColors";
-import { useRouter } from "expo-router";
 import { StyleSheet, View, ScrollView, Linking } from "react-native";
 import { Button, Text, Divider } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PrivacyPolicyModal() {
-  const router = useRouter();
+  // const router = useRouter();
   const { colors } = useAppColors();
 
   const handleContactPrivacy = () => {

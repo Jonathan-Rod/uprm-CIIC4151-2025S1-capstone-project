@@ -9,10 +9,10 @@ export interface DateTimeSelectorProps {
   disabled?: boolean;
 }
 
-export default function DateTimeSelector({ 
-  value, 
-  onChange, 
-  disabled = false 
+export default function DateTimeSelector({
+  value,
+  onChange,
+  disabled = false
 }: DateTimeSelectorProps) {
   const { colors } = useAppColors();
 
@@ -43,7 +43,7 @@ export default function DateTimeSelector({
     { value: "11", label: "November" },
     { value: "12", label: "December" },
   ];
-  
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => (currentYear - 2 + i).toString());
   const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
@@ -56,9 +56,9 @@ export default function DateTimeSelector({
     return monthObj ? monthObj.label : "Select Month";
   };
 
-  const getDisplayValue = (value: string, options: Array<{value: string, label: string}> | string[]) => {
+  const getDisplayValue = (value: string, options: {value: string, label: string}[] | string[]) => {
     if (Array.isArray(options) && options.length > 0 && typeof options[0] === 'object') {
-      const option = (options as Array<{value: string, label: string}>).find(opt => opt.value === value);
+      const option = (options as {value: string, label: string}[]).find(opt => opt.value === value);
       return option ? option.label : `Select`;
     }
     return value || `Select`;
@@ -94,7 +94,7 @@ export default function DateTimeSelector({
     setDay(value.getDate().toString());
     setMonth((value.getMonth() + 1).toString());
     setYear(value.getFullYear().toString());
-    
+
     const hours12 = value.getHours() % 12 || 12;
     setHour(hours12.toString());
     setMinute(value.getMinutes().toString().padStart(2, '0'));
@@ -130,23 +130,23 @@ export default function DateTimeSelector({
   const styles = createStyles(colors);
 
   // Individual dropdown components with proper anchor
-  const DropdownWithMenu = ({ 
-    label, 
-    value, 
-    options, 
+  const DropdownWithMenu = ({
+    label,
+    value,
+    options,
     onSelect,
     menuName,
-    getDisplayText 
+    getDisplayText
   }: {
     label: string;
     value: string;
-    options: Array<{value: string, label: string}> | string[];
+    options: {value: string, label: string}[] | string[];
     onSelect: (value: string) => void;
     menuName: string;
     getDisplayText?: (value: string) => string;
   }) => {
     const displayText = getDisplayText ? getDisplayText(value) : getDisplayValue(value, options);
-    
+
     return (
       <View style={styles.dropdownField}>
         <Text variant="bodySmall" style={styles.dateFieldLabel}>
@@ -172,7 +172,7 @@ export default function DateTimeSelector({
           {options.map((option) => {
             const optionValue = typeof option === 'object' ? option.value : option;
             const optionLabel = typeof option === 'object' ? option.label : option;
-            
+
             return (
               <Menu.Item
                 key={optionValue}

@@ -4,7 +4,6 @@ import { StyleSheet, View, ScrollView, Alert } from "react-native";
 import { Button, Chip, TextInput, Text } from "react-native-paper";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useRouter } from "expo-router";
-import DateTimeSelector from "@/components/DateTimeSelector";
 
 export interface ReportFormRef {
   clearForm: () => void;

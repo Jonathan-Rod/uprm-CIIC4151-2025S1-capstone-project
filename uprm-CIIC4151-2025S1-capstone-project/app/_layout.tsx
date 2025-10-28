@@ -111,7 +111,11 @@ export default function RootLayout() {
         <PaperProvider theme={paperTheme}>
           <ThemeProvider value={navigationTheme}>
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" />
+              <ActivityIndicator
+                size="large"
+                accessibilityLabel="Loading authentication status"
+                accessibilityRole="progressbar"
+              />
               <Text style={styles.loadingText}>Checking authentication...</Text>
               <Text style={styles.debugText}>{debugInfo}</Text>
               <Button

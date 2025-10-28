@@ -164,6 +164,7 @@ export default function ExploreScreen() {
         onPress={handleCreateReport}
         accessibilityLabel="Create new report"
         accessibilityHint="Opens the report submission form"
+        accessibilityRole="button"
         color={colors.button.text}
       />
     </SafeAreaView>

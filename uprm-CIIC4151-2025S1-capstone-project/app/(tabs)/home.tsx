@@ -390,6 +390,8 @@ export default function HomeScreen() {
               <Button
                 mode="outlined"
                 icon="map-marker"
+                accessibilityLabel="View map"
+                accessibilityRole="image"
                 onPress={() => {
                   /* TODO: Implement map view */
                 }}
@@ -410,6 +412,7 @@ export default function HomeScreen() {
         onPress={handleCreateReport}
         accessibilityLabel="Create new report"
         accessibilityHint="Opens the report submission form"
+        accessibilityRole="button"
         color={colors.button.text}
       />
     </SafeAreaView>
