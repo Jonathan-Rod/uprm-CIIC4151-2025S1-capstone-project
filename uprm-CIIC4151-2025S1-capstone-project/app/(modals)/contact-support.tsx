@@ -1,13 +1,12 @@
 import { ThemedView } from "@/components/themed-view";
-import { useRouter } from "expo-router";
-import { StyleSheet, View, ScrollView, Linking, Alert } from "react-native";
+import { StyleSheet, ScrollView, Linking, Alert } from "react-native";
 import { Button, Text, Card, Divider } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getStoredCredentials } from "@/utils/auth";
 import { useAppColors } from "@/hooks/useAppColors";
 
 export default function ContactSupportModal() {
-  const router = useRouter();
+  // const router = useRouter();
   const { colors } = useAppColors();
 
   const handleEmailPress = async () => {
@@ -215,17 +214,16 @@ export default function ContactSupportModal() {
 
           <Card style={styles.contactCard}>
             <Card.Content>
-            <Text variant="titleSmall" style={styles.cardTitle}>
-              What to Include in Your Support Request:
-            </Text>
-            <Text variant="bodyMedium" style={styles.cardText}>
-              • Detailed description of the issue{"\n"}• Steps to reproduce the
-              problem{"\n"}• Screenshots (if applicable){"\n"}• Device and app
-              version information{"\n"}• Your contact email
-            </Text>
-          </Card.Content>
+              <Text variant="titleSmall" style={styles.cardTitle}>
+                What to Include in Your Support Request:
+              </Text>
+              <Text variant="bodyMedium" style={styles.cardText}>
+                • Detailed description of the issue{"\n"}• Steps to reproduce
+                the problem{"\n"}• Screenshots (if applicable){"\n"}• Device and
+                app version information{"\n"}• Your contact email
+              </Text>
+            </Card.Content>
           </Card>
-
 
           {/* <View style={styles.hoursSection}>
             <Text variant="titleSmall" style={styles.hoursTitle}>
@@ -284,10 +282,7 @@ const createStyles = (colors: any) =>
     contactCard: {
       marginBottom: 8,
       elevation: 2,
-      shadowColor: colors.border,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
+      boxShadow: `0px 1px 2px ${colors.border || "#0000001a"}`,
       backgroundColor: colors.card,
     },
     cardTitle: {

@@ -95,10 +95,7 @@ const createStyles = (colors: any) =>
     card: {
       padding: 16,
       elevation: 4,
-      shadowColor: colors.border,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      boxShadow: `0px 2px 4px ${colors.border || "#0000001a"}`,
       backgroundColor: colors.card,
     },
     title: {

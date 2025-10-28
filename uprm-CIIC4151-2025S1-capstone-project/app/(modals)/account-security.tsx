@@ -427,14 +427,7 @@ const createStyles = (colors: any) =>
       padding: 16,
       borderRadius: 8,
       borderLeftWidth: 4,
-      shadowColor: colors.shadow || "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
+      boxShadow: `0px 1px 2px ${colors.shadow || "#0000001a"}`,
     },
     sectionTitle: {
       marginBottom: 12,
