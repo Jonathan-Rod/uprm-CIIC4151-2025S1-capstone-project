@@ -123,7 +123,7 @@ PORT="<your docker container port number>"
 | ![Profile](uprm-CIIC4151-2025S1-capstone-project/assets/images/screenshots/profile.png) | ![Report Details](uprm-CIIC4151-2025S1-capstone-project/assets/images/screenshots/reportDetails.png) | ![Settings](uprm-CIIC4151-2025S1-capstone-project/assets/images/screenshots/settings.png) |
 
 - Youtube video demo of application
- www.youtube.com. https://www.youtube.com/shorts/wGjVKdWKA_M
+ https://youtube.com/shorts/wGjVKdWKA_M?si=2S3jsVnF2O_8qOp1
 
 ## Team Bio
 
