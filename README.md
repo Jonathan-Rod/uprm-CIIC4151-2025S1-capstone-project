@@ -39,14 +39,13 @@ Reporte Ciudadano is a mobile/web application for submitting and tracking commun
 1) Clone repository
 
     ```bash
-    git clone https://github.com/your-username/reporte-ciudadano.git
-    cd reporte-ciudadano
+    git clone https://github.com/Jonathan-Rod/uprm-CIIC4151-2025S1-capstone-project.git
+    cd uprm-CIIC4151-2025S1-capstone-project (verify)
     ```
 
-2) Backend (local dev)
+2) Backend (local dev) (verify)
 
     ```bash
-    cd backend
     python -m venv venv
     # macOS / Linux
     source venv/bin/activate
@@ -56,22 +55,24 @@ Reporte Ciudadano is a mobile/web application for submitting and tracking commun
     pip install -r requirements.txt
     cp .env.example .env
     # Edit .env with real values, then:
-    flask run --port=5000
+    cd backend (verify)
+    python main.py (verify)
     ```
 
     Notes:
 
-    - Use the `DATABASE_URL` env var to point to a local or containerized PostgreSQL.
-    - Run database migrations (Alembic) if present: e.g. `flask db upgrade` (project-specific).
+    - Use the `DATABASE_URL` env var to point to a local or containerized PostgreSQL. (in case if app is still in local development)
+    - Run database migrations (Alembic) if present: e.g. `flask db upgrade` (project-specific). (verify)
 
 3) Frontend (Expo)
 
     ```bash
-    cd frontend
+    cd uprm-CIIC4151-2025S1-capstone-project (verify)
     npm install
     # if needed
     npm install -g expo-cli
-    npm start
+    npx expo start (to run app, verify)
+    (below not needed?)
     # then run on device/emulator:
     npm run android
     npm run ios
@@ -79,7 +80,7 @@ Reporte Ciudadano is a mobile/web application for submitting and tracking commun
 
     Ensure API base URL in frontend runtime config points to backend (`EXPO_PUBLIC_API_URL` or similar).
 
-4) Docker (recommended for full stack)
+4) Docker (recommended for full stack) (might kill these bullet)
 
     From project root:
 
@@ -100,14 +101,14 @@ Reporte Ciudadano is a mobile/web application for submitting and tracking commun
 Example backend .env (copy from .env.example):
 
 ```text
-DATABASE_URL=postgresql://user:password@db:5432/reporte_ciudadano
-SECRET_KEY=your-secret-key
-JWT_SECRET_KEY=your-jwt-secret
-UPLOAD_FOLDER=./uploads
-EXPO_PUBLIC_API_URL=http://localhost:5000
+DATABASE_URL=postgresql://user:password@db:5432/uprm-CIIC4151-2025S1-capstone-project (verify)
+SECRET_KEY=your-secret-key (take out)
+JWT_SECRET_KEY=your-jwt-secret (take out)
+UPLOAD_FOLDER=./uploads (?)
+EXPO_PUBLIC_API_URL=http://localhost:5000 (?)
 ```
 
-Frontend runtime config (example)
+Frontend runtime config (example) (?)
 
 ```javascript
 export default {
@@ -116,11 +117,11 @@ export default {
 }
 ```
 
-## Project structure
+## Project structure (verify)
 
 ```text
-reporte-ciudadano/
-├── frontend/                 # React Native app (Expo)
+uprm-CIIC4151-2025S1-capstone-project/
+├── app/                 # React Native app (Expo)
 │   ├── src/
 │   │   ├── components/       # Reusable components
 │   │   ├── screens/          # App screens
