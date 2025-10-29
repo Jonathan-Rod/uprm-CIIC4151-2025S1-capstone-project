@@ -5,25 +5,25 @@ import { getStoredCredentials } from "@/utils/auth";
 // Configuración de URL base para diferentes plataformas
 const getApiBaseUrl = () => {
   if (__DEV__) {
-    console.log("📱 Platform:", Platform.OS);
+    console.log("Platform:", Platform.OS);
 
     // Para emulador de Android - usa 10.0.2.2 para localhost del host
     if (Platform.OS === "android") {
       const androidUrl = "http://10.0.2.2:5000";
-      console.log("🤖 Using Android URL:", androidUrl);
+      console.log("Using Android URL:", androidUrl);
       return androidUrl;
     }
 
     // Para iOS emulador
     if (Platform.OS === "ios") {
-      const iosUrl = "http://localhost:5000";
-      console.log("🍎 Using iOS URL:", iosUrl);
+      const iosUrl = "http://192.168.4.49:5000";
+      console.log("Using iOS URL:", iosUrl);
       return iosUrl;
     }
 
     // Para web
     const webUrl = "http://localhost:5000";
-    console.log("🌐 Using Web URL:", webUrl);
+    console.log("Using Web URL:", webUrl);
     return webUrl;
   }
 
@@ -46,12 +46,12 @@ async function request(endpoint: string, method = "GET", body?: any) {
   };
 
   try {
-    console.log(`📡 API Request: ${method} ${url}`);
-    console.log("📦 Request data:", body);
+    console.log(`API Request: ${method} ${url}`);
+    console.log("Request data:", body);
 
     const response = await fetch(url, options);
 
-    console.log(`📨 Response Status: ${response.status}`);
+    console.log(`Response Status: ${response.status}`);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -72,10 +72,10 @@ async function request(endpoint: string, method = "GET", body?: any) {
     }
 
     const data = await response.json();
-    console.log(`✅ API Response Data:`, data);
+    console.log(`API Response Data:`, data);
     return data;
   } catch (error) {
-    console.error(`❌ API Error for ${method} ${endpoint}:`, error);
+    console.error(`API Error for ${method} ${endpoint}:`, error);
 
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       throw new Error(
@@ -656,16 +656,16 @@ export async function getAssignedReports(
 
 // Función de utilidad para probar la conexión
 export async function testConnection() {
-  console.log("🔍 Testing API connection to:", API_BASE_URL);
+  console.log("Testing API connection to:", API_BASE_URL);
 
   try {
     const response = await fetch(`${API_BASE_URL}/`, {
       method: "GET",
     });
-    console.log("✅ Connection test successful, status:", response.status);
+    console.log("Connection test successful, status:", response.status);
     return true;
   } catch (error) {
-    console.error("❌ Connection test failed:", error);
+    console.error("Connection test failed:", error);
     return false;
   }
 }

@@ -114,10 +114,10 @@ PORT="<your docker container port number>"
 ```
 ## Screenshots
 
-| Home Screen | Report Creation | Admin Dashboard | Map View |
-|-------------|-----------------|-----------------|----------|
-| ![Home](screenshots/home.png) | ![Create Report](screenshots/create-report.png) | ![Admin](screenshots/admin.png) | ![Map](screenshots/map.png) |
+| Home Screen | Report Form | Explore Screen |
+|-------------|-----------------|----------------|
+| ![Home](screenshots/home.png) | ![Report Form](screenshots/reportForm.png) | ![Explore](screenshots/explore.png) |
 
-| User Profile | Report Details | Notifications | Settings |
-|--------------|----------------|---------------|----------|
-| ![Profile](screenshots/profile.png) | ![Report Details](screenshots/report-details.png) | ![Notifications](screenshots/notifications.png) | ![Settings](screenshots/settings.png) |
+| User Profile | Report Details | Settings |
+|--------------|----------------|----------|
+| ![Profile](screenshots/profile.png) | ![Report Details](screenshots/reportDetails.png) | ![Settings](screenshots/settings.png) |
