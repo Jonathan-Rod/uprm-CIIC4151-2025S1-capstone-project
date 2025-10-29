@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, RefreshControl, View } from "react-native";
-import { Text, ActivityIndicator, Button } from "react-native-paper";
+import { Text, ActivityIndicator, Button, List } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AdminStats from "@/components/AdminStats";
@@ -15,11 +15,7 @@ import {
   getAdminStats,
 } from "@/utils/api";
 import { getStoredCredentials } from "@/utils/auth";
-import {
-  ReportStatus,
-  type ReportData,
-  type UserSession,
-} from "@/types/interfaces";
+import { type ReportData, type UserSession } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
 
 export default function ProfileScreen() {
@@ -33,6 +29,9 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [expandedRecentActivity, setExpandedRecentActivity] = useState(false);
+  const handlePressRecentActivity = () =>
+    setExpandedRecentActivity(!expandedRecentActivity);
 
   const loadProfileData = async () => {
     try {
@@ -55,7 +54,7 @@ export default function ProfileScreen() {
         email: credentials.email,
         admin: false, // This should come from your API
         suspended: false,
-        pinned: false,
+        // pinned: false,
         created_at: new Date().toISOString(),
       };
       setUser(userData);
@@ -125,13 +124,10 @@ export default function ProfileScreen() {
 
   // Calculate user-specific statistics from local data
   const getUserSpecificStats = () => {
+    // TOFIX: MOodificar por un query en dao de d_users by id
     if (!user || !allReports.length) {
       return {
-        filed: 0,
-        resolved: 0,
-        pending: 0,
         lastThreeVisited: [],
-        lastReportDate: null,
       };
     }
 
@@ -140,22 +136,7 @@ export default function ProfileScreen() {
     );
 
     return {
-      filed: userReports.length,
-      resolved: userReports.filter(
-        (report) =>
-          report.status === ReportStatus.RESOLVED ||
-          report.status === ReportStatus.CLOSED
-      ).length,
-      pending: userReports.filter(
-        (report) =>
-          report.status === ReportStatus.OPEN ||
-          report.status === ReportStatus.IN_PROGRESS
-      ).length,
-      lastThreeVisited: userReports.slice(-3).reverse(), // Show most recent first
-      lastReportDate:
-        userReports.length > 0
-          ? userReports[userReports.length - 1]?.created_at
-          : null,
+      lastThreeVisited: userReports.slice(0, 3), // Show most recent first
     };
   };
 
@@ -233,13 +214,11 @@ export default function ProfileScreen() {
             <UserCard user={user} />
 
             <ReportStats
-              filed={userStats?.total_reports || userSpecificStats.filed}
-              resolved={
-                userStats?.resolved_reports || userSpecificStats.resolved
-              }
-              pending={userStats?.open_reports || userSpecificStats.pending}
-              pinned={userStats?.pinned_reports_count || pinnedReports.length}
-              lastReportDate={userSpecificStats.lastReportDate}
+              filed={userStats?.total_reports}
+              resolved={userStats?.resolved_reports}
+              pending={userStats?.open_reports}
+              pinned={userStats?.pinned_reports_count}
+              lastReportDate={userStats?.last_report_date}
             />
 
             {user?.admin && adminStats && (
@@ -255,7 +234,19 @@ export default function ProfileScreen() {
             )}
 
             {userSpecificStats.lastThreeVisited.length > 0 && (
-              <VisitedReports reports={userSpecificStats.lastThreeVisited} />
+              <List.Section style={{ margin: 0, padding: 0 }}>
+                <List.Accordion
+                  style={{ margin: 0, padding: 0 }}
+                  title={`Recent Activity (${userSpecificStats.lastThreeVisited.length})`}
+                  left={(props) => <List.Icon {...props} icon="folder" />}
+                  expanded={expandedRecentActivity}
+                  onPress={handlePressRecentActivity}
+                >
+                  <VisitedReports
+                    reports={userSpecificStats.lastThreeVisited}
+                  />
+                </List.Accordion>
+              </List.Section>
             )}
 
             {!error &&

@@ -32,7 +32,7 @@ export default function TermsAndConditionsModal() {
           </Text>
 
           <Text variant="bodySmall" style={styles.effectiveDate}>
-            Last Updated: December 2024
+            Last Updated: October 2025
           </Text>
 
           <Text variant="bodyMedium" style={styles.introText}>
@@ -106,7 +106,7 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Intellectual Property */}
-          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
+          {/* <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
@@ -119,7 +119,7 @@ export default function TermsAndConditionsModal() {
               and its licensors. The Service is protected by copyright,
               trademark, and other laws.
             </Text>
-          </View>
+          </View> */}
 
           {/* Termination */}
           <View style={[styles.section, { borderLeftColor: colors.primary }]}>
@@ -127,7 +127,7 @@ export default function TermsAndConditionsModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
             >
-              6. Termination
+              5. Termination
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               We may terminate or suspend your account and bar access to the
@@ -143,7 +143,7 @@ export default function TermsAndConditionsModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
             >
-              7. Limitation of Liability
+              6. Limitation of Liability
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               In no event shall Community Reports, nor its directors, employees,
@@ -155,19 +155,19 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Governing Law */}
-          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
+          {/* <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
             >
-              8. Governing Law
+              7. Governing Law
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               These Terms shall be governed and construed in accordance with the
               laws of Puerto Rico, without regard to its conflict of law
               provisions.
             </Text>
-          </View>
+          </View> */}
 
           {/* Changes to Terms */}
           <View style={[styles.section, { borderLeftColor: colors.primary }]}>
@@ -175,7 +175,7 @@ export default function TermsAndConditionsModal() {
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
             >
-              9. Changes to Terms
+              7. Changes to Terms
             </Text>
             <Text variant="bodyMedium" style={styles.sectionText}>
               We reserve the right, at our sole discretion, to modify or replace
@@ -186,7 +186,7 @@ export default function TermsAndConditionsModal() {
           </View>
 
           {/* Contact Information */}
-          <View style={[styles.section, { borderLeftColor: colors.primary }]}>
+          {/* <View style={[styles.section, { borderLeftColor: colors.primary }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.primary }]}
@@ -202,7 +202,7 @@ export default function TermsAndConditionsModal() {
               {"\n"}
               <Text style={styles.bold}>Address:</Text> San Juan, Puerto Rico
             </Text>
-          </View>
+          </View> */}
 
           {/* Acknowledgment Box */}
           <View style={styles.acknowledgmentBox}>
@@ -217,7 +217,7 @@ export default function TermsAndConditionsModal() {
             This is a summary of our full Terms and Conditions. For complete
             details, please review the full document.
           </Text>
-
+{/*
           <View style={styles.actionButtons}>
             <Button
               mode="outlined"
@@ -237,7 +237,7 @@ export default function TermsAndConditionsModal() {
             >
               Contact Legal Team
             </Button>
-          </View>
+          </View> */}
         </ScrollView>
 
         {/* <View style={styles.buttonContainer}>
@@ -249,8 +249,8 @@ export default function TermsAndConditionsModal() {
             textColor={colors.button.text}
           >
             Back to Settings
-          </Button>
-        </View> */}
+          </Button> */
+        /* </View> */}
       </ThemedView>
     </SafeAreaView>
   );

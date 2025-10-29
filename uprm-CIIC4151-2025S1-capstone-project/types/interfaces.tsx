@@ -37,7 +37,7 @@ export interface UserSession {
   email: string;
   admin: boolean;
   suspended: boolean;
-  pinned: boolean;
+  // pinned: boolean;
   created_at: string;
 }
 

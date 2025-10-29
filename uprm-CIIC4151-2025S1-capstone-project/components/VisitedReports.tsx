@@ -87,7 +87,7 @@ export default function VisitedReports({ reports }: VisitedReportsProps) {
     <Card style={styles.card}>
       <Card.Content>
         <Text variant="titleMedium" style={styles.title}>
-          📋 Recent Activity ({reports.length})
+          Recent Activity ({reports.length})
         </Text>
 
         <View style={styles.reportsList}>

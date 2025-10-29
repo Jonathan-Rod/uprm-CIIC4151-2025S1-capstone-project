@@ -41,10 +41,16 @@ export default function SignInForm({ onSuccess }: SignInFormProps) {
 
       console.log("User creation response:", response);
 
+      if (!response) {
+        setErrorMessage("Failed to create account");
+        Alert.alert("Registration Failed", "Failed to create account");
+        return;
+      }
+
       // Handle successful user creation
       if (response && response.id) {
         // Save credentials
-        await saveCredentials(response.user.id, email, password);
+        await saveCredentials(response.user.id, email, password, response.user.admin, response.user.suspended);
 
         Alert.alert("Success", "Account created successfully!");
         onSuccess();

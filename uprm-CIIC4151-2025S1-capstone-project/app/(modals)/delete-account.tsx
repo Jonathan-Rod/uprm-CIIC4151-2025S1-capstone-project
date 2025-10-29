@@ -120,7 +120,7 @@ export default function DeleteAccountModal() {
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="headlineMedium" style={styles.title}>
-              🚨 Final Confirmation
+              Final Confirmation
             </Text>
 
             <Text variant="bodyMedium" style={styles.confirmationText}>
