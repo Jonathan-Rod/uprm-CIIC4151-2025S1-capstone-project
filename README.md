@@ -124,3 +124,9 @@ PORT="<your docker container port number>"
 
 - Youtube video demo of application
  www.youtube.com. https://www.youtube.com/shorts/wGjVKdWKA_M
+
+## Contact
+
+- jonathan.rodriguez72@upr.edu
+- ramphis.lopez@upr.edu
+- manuel.fuertes@upr.edu
