@@ -172,21 +172,32 @@ class UsersDAO:
 
     def get_user_stats(self, user_id):
         query = """
-            SELECT
-                u.id,
-                u.email,
-                u.created_at,
-                COUNT(r.id) as total_reports,
-                COUNT(CASE WHEN r.status = 'open' THEN 1 END) as open_reports,
-                COUNT(CASE WHEN r.status = 'resolved' THEN 1 END) as resolved_reports,
-                COUNT(CASE WHEN r.status = 'in_progress' THEN 1 END) as in_progress_reports,
-                COUNT(pr.report_id) as pinned_reports_count,
-                COALESCE(AVG(r.rating), 0) as avg_rating_given
-            FROM users u
-            LEFT JOIN reports r ON u.id = r.created_by
-            LEFT JOIN pinned_reports pr ON u.id = pr.user_id
-            WHERE u.id = %s
-            GROUP BY u.id, u.email, u.created_at
+                SELECT
+                u.id, u.email, u.created_at,
+                COALESCE(r.total_reports, 0)              AS total_reports,
+                COALESCE(r.open_reports, 0)               AS open_reports,
+                COALESCE(r.resolved_reports, 0)           AS resolved_reports,
+                COALESCE(r.in_progress_reports, 0)        AS in_progress_reports,
+                COALESCE(pr.pinned_reports_count, 0)      AS pinned_reports_count,
+                COALESCE(r.avg_rating_given, 0)           AS avg_rating_given
+                FROM users u
+                LEFT JOIN (
+                SELECT
+                    created_by,
+                    COUNT(*)                                           AS total_reports,
+                    COUNT(*) FILTER (WHERE status='open')              AS open_reports,
+                    COUNT(*) FILTER (WHERE status='resolved')          AS resolved_reports,
+                    COUNT(*) FILTER (WHERE status='in_progress')       AS in_progress_reports,
+                    AVG(rating)                                        AS avg_rating_given
+                FROM reports
+                GROUP BY created_by
+                ) r ON r.created_by = u.id
+                LEFT JOIN (
+                SELECT user_id, COUNT(*) AS pinned_reports_count
+                FROM pinned_reports
+                GROUP BY user_id
+                ) pr ON pr.user_id = u.id
+                WHERE u.id = %s;
         """
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id,))

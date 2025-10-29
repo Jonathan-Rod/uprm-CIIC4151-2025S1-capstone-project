@@ -7,8 +7,14 @@ from handler.h_locations import LocationsHandler
 from handler.h_departments import DepartmentsHandler
 from handler.h_pinned_reports import PinnedReportsHandler
 
+
+
+
 app = Flask(__name__)
 CORS(app)
+
+from handler.h_global_stats import bp as global_stats_bp
+app.register_blueprint(global_stats_bp)
 
 # ######################################################################################
 # HEALTH CHECK
