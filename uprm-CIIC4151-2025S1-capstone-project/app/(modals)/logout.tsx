@@ -1,52 +1,131 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { deleteToken } from "@/utils/auth";
+import { View, StyleSheet } from "react-native";
+import { Text, Button, Card } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import { completeLogout, getStoredCredentials } from "@/utils/auth";
 import { useRouter } from "expo-router";
-import { StyleSheet, View } from "react-native";
-import { Button, Text } from "react-native-paper";
+import { useAppColors } from "@/hooks/useAppColors";
 
 export default function LogoutModal() {
   const router = useRouter();
+  const { colors } = useAppColors();
+  const [loading, setLoading] = useState(false);
 
-  const handleLogOut = async () => {
-  console.log("Log Out");
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      const credentials = await getStoredCredentials();
 
-  await deleteToken();
-  router.push("/");
-};
+      if (!credentials) {
+        router.back();
+        return;
+      }
 
+      await completeLogout();
+      router.replace("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const styles = createStyles(colors);
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">Log Out</ThemedText>
-      <Text variant="bodyMedium" style={styles.text}>
-        Are you sure you want to log out?
-      </Text>
-      <View style={styles.options}>
-        <Button mode="outlined" onPress={handleLogOut}>
-          Log Out
-        </Button>
-        <Button mode="outlined" onPress={() => router.back()}>
-          Cancel
-        </Button>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text variant="headlineMedium" style={styles.title}>
+              Logout
+            </Text>
+            <Text variant="bodyMedium" style={styles.message}>
+              Are you sure you want to log out of your account?
+            </Text>
+
+            <View style={styles.infoBox}>
+              <Text variant="bodySmall" style={styles.infoText}>
+                • You&apos;ll need to sign in again to access your account{"\n"}
+                • Your data will be safely preserved{"\n"}• Reports and
+                preferences will be saved
+              </Text>
+            </View>
+
+            <View style={styles.buttons}>
+              <Button
+                mode="outlined"
+                onPress={() => router.back()}
+                style={styles.button}
+                disabled={loading}
+                textColor={colors.text}
+              >
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleLogout}
+                style={styles.button}
+                loading={loading}
+                disabled={loading}
+                buttonColor={colors.error}
+                textColor={colors.button.text}
+              >
+                {loading ? "Logging Out..." : "Log Out"}
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
       </View>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  text: {
-    marginVertical: 12,
-  },
-  options: {
-    flexDirection: "row",
-    gap: 15,
-    marginTop: 20,
-  },
-});
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+      justifyContent: "center",
+    },
+    card: {
+      padding: 16,
+      elevation: 4,
+      boxShadow: `0px 2px 4px ${colors.border || "#0000001a"}`,
+      backgroundColor: colors.card,
+    },
+    title: {
+      marginBottom: 16,
+      textAlign: "center",
+      fontWeight: "bold",
+      color: colors.text,
+    },
+    message: {
+      textAlign: "center",
+      marginBottom: 20,
+      color: colors.textSecondary,
+      lineHeight: 20,
+    },
+    infoBox: {
+      backgroundColor: colors.backgroundMuted,
+      padding: 16,
+      borderRadius: 8,
+      marginBottom: 24,
+    },
+    infoText: {
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    buttons: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    button: {
+      flex: 1,
+      borderRadius: 8,
+    },
+  });
