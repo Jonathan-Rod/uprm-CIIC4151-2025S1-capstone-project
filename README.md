@@ -116,8 +116,8 @@ PORT="<your docker container port number>"
 
 | Home Screen | Report Form | Explore Screen |
 |-------------|-----------------|----------------|
-| ![Home](screenshots/home.png) | ![Report Form](screenshots/reportForm.png) | ![Explore](screenshots/explore.png) |
+| ![Home](uprm-CIIC4151-2025S1-capstone-project\assets\images\screenshots\home.png) | ![Report Form](uprm-CIIC4151-2025S1-capstone-project\assets\images\screenshots\reportForm.png) | ![Explore](uprm-CIIC4151-2025S1-capstone-project\assets\images\screenshots\explore.png) |
 
 | User Profile | Report Details | Settings |
 |--------------|----------------|----------|
-| ![Profile](screenshots/profile.png) | ![Report Details](screenshots/reportDetails.png) | ![Settings](screenshots/settings.png) |
+| ![Profile](uprm-CIIC4151-2025S1-capstone-project\assets\images\screenshots\profile.png) | ![Report Details](uprm-CIIC4151-2025S1-capstone-project\assets\images\screenshots\reportDetails.png) | ![Settings](uprm-CIIC4151-2025S1-capstone-project\assets\images\screenshots\settings.png) |
