@@ -4,16 +4,6 @@
 
 Mobile/Web app for reporting and viewing community issues in Puerto Rico. Built with React Native (Expo), Flask, PostgreSQL, and Docker.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Key features](#key-features)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Project structure](#project-structure)
-- [Development tips](#development-tips)
-- [Contributing](#contributing)
-
 ## Overview
 
 Reporte Ciudadano is a mobile/web application for submitting and tracking community issues in Puerto Rico. Citizens can create reports with photos, view and interact with a public feed, and follow the status of issues over time. Administrators review, approve, and update reports through an internal management interface.
@@ -40,10 +30,10 @@ Reporte Ciudadano is a mobile/web application for submitting and tracking commun
 
     ```bash
     git clone https://github.com/Jonathan-Rod/uprm-CIIC4151-2025S1-capstone-project.git
-    cd uprm-CIIC4151-2025S1-capstone-project (verify)
+    cd uprm-CIIC4151-2025S1-capstone-project
     ```
 
-2) Backend (local dev) (verify)
+2) Backend (local dev) 
 
     ```bash
     python -m venv venv
@@ -55,98 +45,79 @@ Reporte Ciudadano is a mobile/web application for submitting and tracking commun
     pip install -r requirements.txt
     cp .env.example .env
     # Edit .env with real values, then:
-    cd backend (verify)
-    python main.py (verify)
+    cd backend
+    python flask_application.py
     ```
 
     Notes:
 
-    - Use the `DATABASE_URL` env var to point to a local or containerized PostgreSQL. (in case if app is still in local development)
-    - Run database migrations (Alembic) if present: e.g. `flask db upgrade` (project-specific). (verify)
+    - Use the `DATABASE_URL` env var to point to a local or containerized PostgreSQL.
+    - .env needs to `modify credentials` in case of discrepancies.
 
 3) Frontend (Expo)
 
     ```bash
-    cd uprm-CIIC4151-2025S1-capstone-project (verify)
+    cd uprm-CIIC4151-2025S1-capstone-project
     npm install
-    # if needed
-    npm install -g expo-cli
-    npx expo start (to run app, verify)
-    (below not needed?)
-    # then run on device/emulator:
-    npm run android
-    npm run ios
+    npx expo start (to run app)
     ```
 
-    Ensure API base URL in frontend runtime config points to backend (`EXPO_PUBLIC_API_URL` or similar).
+    Notes:
+    
+    - Ensure API base URL in frontend runtime config points to backend.
+    - Needs backend running `flask_application.py` and modify `utils/api.ts` **needs the BASE URL updated**
+    - URL given by flask needs to be here -> **android_url**, **iosUrl**, **webUrl** 
 
-4) Docker (recommended for full stack) (might kill these bullet)
-
-    From project root:
-
-    ```bash
-    docker-compose up -d --build
+   ``` ts
+    const getApiBaseUrl = () => {
+      if (DEV) {
+        console.log("Platform:", Platform.OS);
+        // Android
+        if (Platform.OS === "android") {
+          const androidUrl = "http://10.0.2.2:5000/"; 
+          console.log("Using Android URL:", androidUrl);
+          return androidUrl;
+        }
+    
+        // iOS 
+        if (Platform.OS === "ios") {
+          const iosUrl = "http://192.168.4.49:5000/";
+          console.log("Using iOS URL:", iosUrl);
+          return iosUrl;
+        }
+    
+        // Web
+        const webUrl = "http://localhost:5000/";
+        console.log("Using Web URL:", webUrl);
+        return webUrl;
+      }
+    
+      // Para producción
+      return "https://tu-api-real.com/";
+    };
     ```
 
-    For development compose file:
+5) Docker
 
-    ```bash
-    docker-compose -f docker-compose.dev.yml up --build
-    ```
-
-    Troubleshooting: check container logs with `docker-compose logs -f`.
-
+    [Docker Tutorial to set the container](https://sliplane.io/blog/how-to-run-postgres-in-docker)
+    
 ## Configuration
 
-Example backend .env (copy from .env.example):
+Example backend .env:
 
 ```text
-DATABASE_URL=postgresql://user:password@db:5432/uprm-CIIC4151-2025S1-capstone-project (verify)
-SECRET_KEY=your-secret-key (take out)
-JWT_SECRET_KEY=your-jwt-secret (take out)
-UPLOAD_FOLDER=./uploads (?)
-EXPO_PUBLIC_API_URL=http://localhost:5000 (?)
+HOST="localhost"
+USER="<your database username>"
+PASSWORD="your database password"
+DATABASE="<your database name>"
+PORT="<your docker container port number>"
 ```
+## Screenshots
 
-Frontend runtime config (example) (?)
+| Home Screen | Report Creation | Admin Dashboard | Map View |
+|-------------|-----------------|-----------------|----------|
+| ![Home](screenshots/home.png) | ![Create Report](screenshots/create-report.png) | ![Admin](screenshots/admin.png) | ![Map](screenshots/map.png) |
 
-```javascript
-export default {
-  API_BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000',
-  // other runtime values
-}
-```
-
-## Project structure (verify)
-
-```text
-uprm-CIIC4151-2025S1-capstone-project/
-├── app/                 # React Native app (Expo)
-│   ├── src/
-│   │   ├── components/       # Reusable components
-│   │   ├── screens/          # App screens
-│   │   ├── navigation/       # Navigation config
-│   │   └── services/         # API clients and services
-│   └── package.json
-├── backend/                  # Flask API
-│   ├── app/
-│   │   ├── models/           # Database models
-│   │   ├── routes/           # API endpoints
-│   │   └── utils/            # Utilities and helpers
-│   ├── migrations/           # DB migrations (Alembic)
-│   └── requirements.txt
-├── docker-compose.yml
-└── README.md
-```
-
-## Development tips
-
-- Use environment-specific docker-compose files for different workflows.
-- Keep uploads directory mounted in local development to persist images.
-- Add automated tests and CI as project matures.
-
-## Contributing
-
-- Fork the repo, create a feature branch, submit PRs with clear descriptions.
-- Follow existing code style and add tests for new behavior.
-- Include migration files for DB changes.
+| User Profile | Report Details | Notifications | Settings |
+|--------------|----------------|---------------|----------|
+| ![Profile](screenshots/profile.png) | ![Report Details](screenshots/report-details.png) | ![Notifications](screenshots/notifications.png) | ![Settings](screenshots/settings.png) |
