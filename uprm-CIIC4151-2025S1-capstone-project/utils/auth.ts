@@ -9,6 +9,8 @@ export interface UserCredentials {
   userId: number;
   email: string;
   password: string;
+  admin?: boolean;
+  suspended?: boolean;
 }
 
 // Credential Management
@@ -30,10 +32,18 @@ export const getStoredCredentials =
 export const saveCredentials = async (
   userId: number,
   email: string,
-  password: string
+  password: string,
+  admin?: boolean,
+  suspended?: boolean
 ): Promise<void> => {
   try {
-    const credentials: UserCredentials = { userId, email, password };
+    const credentials: UserCredentials = {
+      userId,
+      email,
+      password,
+      admin,
+      suspended,
+    };
     const serialized = JSON.stringify(credentials);
 
     if (Platform.OS === "web") {
@@ -100,13 +110,25 @@ export const getUserEmail = async (): Promise<string | null> => {
 // Validation helpers
 export const hasStoredCredentials = async (): Promise<boolean> => {
   const credentials = await getStoredCredentials();
-  return !!(credentials?.email && credentials?.password && credentials?.userId);
+  return !!(
+    credentials?.email &&
+    credentials?.password &&
+    credentials?.userId &&
+    credentials?.admin &&
+    credentials?.suspended
+  );
 };
 
 export const isValidCredentials = (
   credentials: UserCredentials | null
 ): boolean => {
-  return !!(credentials?.email && credentials?.password && credentials?.userId);
+  return !!(
+    credentials?.email &&
+    credentials?.password &&
+    credentials?.userId &&
+    credentials?.admin &&
+    credentials?.suspended
+  );
 };
 
 // Check if user is logged in
@@ -132,7 +154,9 @@ export const updateUserCredentials = async (
     await saveCredentials(
       updatedCredentials.userId,
       updatedCredentials.email,
-      updatedCredentials.password
+      updatedCredentials.password,
+      updatedCredentials.admin,
+      updatedCredentials.suspended
     );
 
     console.log("Credentials updated successfully");

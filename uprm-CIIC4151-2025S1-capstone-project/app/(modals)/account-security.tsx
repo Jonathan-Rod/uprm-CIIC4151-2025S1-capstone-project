@@ -126,7 +126,7 @@ export default function AccountSecurityModal() {
               enhanced security.
             </Text>
 
-            <List.Item
+            {/* <List.Item
               title="Biometric Authentication"
               description="Use fingerprint or face ID to log in quickly and securely"
               left={(props) => <List.Icon {...props} icon="fingerprint" />}
@@ -144,9 +144,9 @@ export default function AccountSecurityModal() {
               style={styles.listItem}
               titleStyle={styles.listItemTitle}
               descriptionStyle={styles.listItemDescription}
-            />
+            /> */}
 
-            <List.Item
+            {/* <List.Item
               title="Two-Factor Authentication"
               description="Add an extra layer of security to your account"
               left={(props) => <List.Icon {...props} icon="shield-account" />}
@@ -164,7 +164,7 @@ export default function AccountSecurityModal() {
               style={styles.listItem}
               titleStyle={styles.listItemTitle}
               descriptionStyle={styles.listItemDescription}
-            />
+            /> */}
 
             <List.Item
               title="Auto Logout"
@@ -222,7 +222,7 @@ export default function AccountSecurityModal() {
               descriptionStyle={styles.listItemDescription}
             />
 
-            <List.Item
+            {/* <List.Item
               title="Push Notifications"
               description="Receive instant security alerts on your device"
               left={(props) => <List.Icon {...props} icon="bell" />}
@@ -240,7 +240,7 @@ export default function AccountSecurityModal() {
               style={styles.listItem}
               titleStyle={styles.listItemTitle}
               descriptionStyle={styles.listItemDescription}
-            />
+            /> */}
           </View>
 
           <Divider style={styles.divider} />
@@ -258,7 +258,7 @@ export default function AccountSecurityModal() {
               features.
             </Text>
 
-            <List.Item
+            {/* <List.Item
               title="Active Sessions"
               description="View and manage your active login sessions across devices"
               left={(props) => <List.Icon {...props} icon="monitor" />}
@@ -267,7 +267,7 @@ export default function AccountSecurityModal() {
               titleStyle={styles.listItemTitle}
               descriptionStyle={styles.listItemDescription}
               right={(props) => <List.Icon {...props} icon="chevron-right" />}
-            />
+            /> */}
 
             <List.Item
               title="Export Data"
@@ -312,7 +312,7 @@ export default function AccountSecurityModal() {
                   Strong
                 </Text>
               </View>
-              <View style={styles.statusItem}>
+              {/* <View style={styles.statusItem}>
                 <Text style={styles.statusLabel}>2FA Status:</Text>
                 <Text
                   style={[
@@ -326,7 +326,7 @@ export default function AccountSecurityModal() {
                 >
                   {settings.twoFactorAuth ? "Enabled" : "Disabled"}
                 </Text>
-              </View>
+              </View> */}
               <View style={styles.statusItem}>
                 <Text style={styles.statusLabel}>Last Login:</Text>
                 <Text style={styles.statusValue}>

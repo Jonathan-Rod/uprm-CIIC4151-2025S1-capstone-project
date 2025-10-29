@@ -24,96 +24,78 @@ export default function AboutUsModal() {
             </Text> */}
 
             <Text variant="bodyMedium" style={styles.text}>
-              We are committed to creating safer, more responsive communities
-              through our innovative reporting platform. Our mission is to
-              bridge the gap between citizens and local authorities, making it
-              easier to report issues and track their resolution.
+              We’re dedicated to building safer and more responsive communities.
+              We help everyone connect with local authorities and bring
+              transparency to the reporting process of common public needs.
             </Text>
 
             <View style={styles.section}>
               <List.Item
                 title="Our Mission"
-                left={() => (
-                  <Icon
-                    source="bullseye-arrow"
-                    size={22}
-                    color={colors.icon}
-                  />
-                )}
                 titleStyle={styles.sectionTitle}
                 style={{ paddingHorizontal: 0 }}
               />
               <Text variant="bodyMedium" style={styles.text}>
-                To empower communities by providing a transparent, efficient,
-                and user-friendly platform for reporting and resolving local
-                issues.
+                To help people improve their communities by giving them an easy
+                way to report problems, follow their progress, and see them
+                solved. We want everyone to feel heard and be part of the change
+                in their area.
               </Text>
             </View>
 
             <View style={styles.section}>
               <List.Item
                 title="What We Do"
-                left={() => (
-                  <Icon
-                    source="lightbulb-question"
-                    size={22}
-                    color={colors.icon}
-                  />
-                )}
                 titleStyle={styles.sectionTitle}
                 style={{ paddingHorizontal: 0 }}
               />
               <Text variant="bodyMedium" style={styles.text}>
-                • Enable real-time issue reporting with photo evidence{"\n"}•
-                Provide transparent tracking of report status{"\n"}• Facilitate
-                communication between users and administrators{"\n"}• Generate
-                actionable insights for community improvement
+                • Let users easily report local issues with photos and details.
+                {"\n"}• Store and organize reports in a secure database for
+                review.{"\n"}• Help administrators manage, update, and resolve
+                reports.{"\n"}• Keep users informed about the progress and
+                status of their reports.{"\n"}
               </Text>
             </View>
 
             <View style={styles.section}>
               <List.Item
                 title="Our Values"
-                left={() => (
-                  <Icon
-                    source="star"
-                    size={22}
-                    color={colors.icon}
-                  />
-                )}
                 titleStyle={styles.sectionTitle}
                 style={{ paddingHorizontal: 0 }}
               />
               <Text variant="bodyMedium" style={styles.text}>
-                • <Text style={styles.bold}>Transparency:</Text> Clear
-                communication and status updates{"\n"}•{" "}
-                <Text style={styles.bold}>Efficiency:</Text> Streamlined
-                reporting and resolution processes{"\n"}•{" "}
-                <Text style={styles.bold}>Community:</Text> Putting people at
-                the center of everything we do{"\n"}•{" "}
-                <Text style={styles.bold}>Innovation:</Text> Continuously
-                improving our platform
+                • <Text style={styles.bold}>Transparency: </Text>
+                Open and clear updates on every report.{"\n"}{"\n"}•{" "}
+                <Text style={styles.bold}>Accountability:</Text> Ensuring
+                actions are taken and progress is visible.{"\n"}{"\n"}•{" "}
+                <Text style={styles.bold}>Efficiency:</Text> Making it quick and
+                easy to report and resolve issues.{"\n"}{"\n"}
               </Text>
             </View>
 
             <View style={styles.section}>
               <List.Item
-                title="Our Impact"
-                left={() => (
-                  <Icon
-                    source="chart-bar"
-                    size={22}
-                    color={colors.icon}
-                  />
-                )}
+                title="Team Roles"
                 titleStyle={styles.sectionTitle}
                 style={{ paddingHorizontal: 0 }}
               />
               <Text variant="bodyMedium" style={styles.text}>
-                Since our launch, we&apos;ve helped resolve thousands of
-                community issues, from infrastructure problems to environmental
-                concerns. Our platform has become a trusted tool for citizens
-                and local authorities alike.
+                • <Text style={styles.bold}>Ramphis Lopez – Data & Backend Development: </Text> {"\n"} {"\t"}
+                Responsible for data collection during research, defining the
+                database schema, and implementing core backend functions. Leads
+                the development of analytics features and performance testing in
+                later stages. {"\n"} {"\n"}
+                • <Text style={styles.bold}>Manuel Fuertes – Requirements & Integration: </Text> {"\n"}{"\t"}
+                Focuses on drafting project requirements and setting up the
+                backend environment. Works on UI mockups during development and
+                integrates frontend with backend. Leads the analysis of user
+                feedback. {"\n"} {"\n"}
+                • <Text style={styles.bold}>Jonathan Rodriguez – Research & API Development: </Text> {"\n"}{"\t"}
+                Conducts initial interviews, researches and prepares development
+                tools, and implements REST API endpoints. Contributes to
+                settings functionality and gathers insights from surveys during
+                the final sprint. {"\n"} {"\n"}
               </Text>
             </View>
 
@@ -122,20 +104,12 @@ export default function AboutUsModal() {
             <View style={styles.contactInfo}>
               <List.Item
                 title="Get In Touch"
-                left={() => (
-                  <Icon
-                    source="phone"
-                    size={22}
-                    color={colors.icon}
-                  />
-                )}
                 titleStyle={styles.sectionTitle}
                 style={{ paddingHorizontal: 0 }}
               />
               <Text variant="bodyMedium" style={styles.text}>
-                Have questions or suggestions? We&apos;d love to hear from you!
-                {"\n"}
-                Visit the Contact Support section in Settings to reach our team.
+                Have a question or suggestion? We’d love to hear from you!{"\n"}
+                Visit the Contact Support section in the app settings to reach our team.
               </Text>
             </View>
 
