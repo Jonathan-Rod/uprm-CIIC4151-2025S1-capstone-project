@@ -15,6 +15,14 @@ def load_db():
         psycopg2.connection: Database connection object
     """
     try:
+        # 1️⃣ Prefer Heroku DATABASE_URL if it exists
+        database_url = os.getenv("DATABASE_URL")
+
+        if database_url:
+            # Heroku case
+            return psycopg2.connect(database_url, connect_timeout=5)
+
+        # 2️⃣ Local development (fallback to individual vars)
         conn = psycopg2.connect(
             dbname=os.getenv("DATABASE"),
             user=os.getenv("USER"),
