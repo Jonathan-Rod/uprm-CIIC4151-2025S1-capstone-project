@@ -125,8 +125,14 @@ PORT="<your docker container port number>"
 - Youtube video demo of application
  www.youtube.com. https://www.youtube.com/shorts/wGjVKdWKA_M
 
-## Contact
+## Team Bio
 
+Roles
+- Jonathan Rodriguez – Research & API Development 
+- Ramphis Lopez – Data & Backend Development
+- Manuel Fuertes – Requirements & Integration
+  
+Contact
 - jonathan.rodriguez72@upr.edu
 - ramphis.lopez@upr.edu
 - manuel.fuertes@upr.edu
