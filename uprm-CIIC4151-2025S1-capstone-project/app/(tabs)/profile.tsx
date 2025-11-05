@@ -38,7 +38,6 @@ export default function ProfileScreen() {
       setError("");
       setLoading(true);
 
-      // Check authentication first
       const credentials = await getStoredCredentials();
 
       if (!credentials) {
@@ -48,18 +47,15 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Create user session from credentials
       const userData: UserSession = {
         id: credentials.userId,
         email: credentials.email,
-        admin: false, // This should come from your API
+        admin: false,
         suspended: false,
-        // pinned: false,
         created_at: new Date().toISOString(),
       };
       setUser(userData);
 
-      // Load all data in parallel
       const [statsData, pinnedData, reportsData] = await Promise.all([
         getUserStats(userData.id).catch((err) => {
           console.warn("Failed to load user stats:", err);
@@ -77,7 +73,6 @@ export default function ProfileScreen() {
 
       setUserStats(statsData);
 
-      // Handle different pinned reports response formats
       const pinnedReportsData =
         pinnedData.pinned_reports || pinnedData.reports || pinnedData || [];
       setPinnedReports(
@@ -86,7 +81,6 @@ export default function ProfileScreen() {
 
       setAllReports(reportsData.reports || []);
 
-      // Load admin stats if user is admin
       if (userData.admin) {
         try {
           const adminStatsData = await getAdminStats(userData.id);
@@ -97,8 +91,6 @@ export default function ProfileScreen() {
       }
     } catch (err: any) {
       console.error("Error loading profile data:", err);
-
-      // Handle specific authentication errors
       if (
         err.message?.includes("not authenticated") ||
         err.message?.includes("User ID")
@@ -122,21 +114,15 @@ export default function ProfileScreen() {
     loadProfileData();
   }, []);
 
-  // Calculate user-specific statistics from local data
   const getUserSpecificStats = () => {
-    // TOFIX: MOodificar por un query en dao de d_users by id
     if (!user || !allReports.length) {
-      return {
-        lastThreeVisited: [],
-      };
+      return { lastThreeVisited: [] };
     }
-
     const userReports = allReports.filter(
       (report) => report.created_by === user.id
     );
-
     return {
-      lastThreeVisited: userReports.slice(0, 3), // Show most recent first
+      lastThreeVisited: userReports.slice(0, 3),
     };
   };
 
@@ -163,7 +149,7 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loginContainer}>
-          <Text variant="headlineMedium" style={styles.loginTitle}>
+          <Text variant="headlineMedium" style={styles.header}>
             Profile
           </Text>
           <Text variant="bodyMedium" style={styles.loginSubtitle}>
@@ -184,6 +170,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed header outside the scroll area (same pattern as Explore) */}
+      <Text variant="headlineMedium" style={styles.header}>
+        Profile
+      </Text>
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -194,9 +185,8 @@ export default function ProfileScreen() {
             tintColor={colors.primary}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageTitle}>Profile</Text>
-
         {error && !error.includes("log in") ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Error: {error}</Text>
@@ -242,9 +232,7 @@ export default function ProfileScreen() {
                   expanded={expandedRecentActivity}
                   onPress={handlePressRecentActivity}
                 >
-                  <VisitedReports
-                    reports={userSpecificStats.lastThreeVisited}
-                  />
+                  <VisitedReports reports={userSpecificStats.lastThreeVisited} />
                 </List.Accordion>
               </List.Section>
             )}
@@ -274,17 +262,17 @@ const createStyles = (colors: any) =>
       flex: 1,
       backgroundColor: colors.background,
     },
-    content: {
-      padding: 16,
-      gap: 16,
-      paddingBottom: 32,
-    },
-    pageTitle: {
-      fontSize: 24,
-      fontWeight: "700",
-      marginBottom: 4,
-      textAlign: "center",
+    // Header matches Explore: centered, bold, margin spacing
+    header: {
+      margin: 16,
+      fontWeight: "bold",
       color: colors.text,
+      textAlign: "center",
+    },
+    content: {
+      paddingHorizontal: 16,
+      paddingBottom: 32,
+      gap: 16,
     },
     loadingContainer: {
       flex: 1,
@@ -301,11 +289,6 @@ const createStyles = (colors: any) =>
       alignItems: "center",
       padding: 24,
       gap: 16,
-    },
-    loginTitle: {
-      fontWeight: "bold",
-      textAlign: "center",
-      color: colors.text,
     },
     loginSubtitle: {
       textAlign: "center",

@@ -81,17 +81,17 @@ export default function AboutUsModal() {
                 style={{ paddingHorizontal: 0 }}
               />
               <Text variant="bodyMedium" style={styles.text}>
-                • <Text style={styles.bold}>Ramphis Lopez – Data & Backend Development: </Text> {"\n"} {"\t"}
+                • <Text style={styles.bold}>Ramphis Lopez – Data & Backend Development: </Text> {"\n"}
                 Responsible for data collection during research, defining the
                 database schema, and implementing core backend functions. Leads
                 the development of analytics features and performance testing in
                 later stages. {"\n"} {"\n"}
-                • <Text style={styles.bold}>Manuel Fuertes – Requirements & Integration: </Text> {"\n"}{"\t"}
+                • <Text style={styles.bold}>Manuel Fuertes – Requirements & Integration: </Text> {"\n"}
                 Focuses on drafting project requirements and setting up the
                 backend environment. Works on UI mockups during development and
                 integrates frontend with backend. Leads the analysis of user
                 feedback. {"\n"} {"\n"}
-                • <Text style={styles.bold}>Jonathan Rodriguez – Research & API Development: </Text> {"\n"}{"\t"}
+                • <Text style={styles.bold}>Jonathan Rodriguez – Research & API Development: </Text> {"\n"}
                 Conducts initial interviews, researches and prepares development
                 tools, and implements REST API endpoints. Contributes to
                 settings functionality and gathers insights from surveys during

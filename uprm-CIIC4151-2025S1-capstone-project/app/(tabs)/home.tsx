@@ -28,8 +28,6 @@ export default function HomeScreen() {
   const loadHomeData = async () => {
     try {
       setError("");
-
-      // Check if user is logged in using our new auth utility
       const credentials = await getStoredCredentials();
 
       if (!credentials) {
@@ -39,31 +37,25 @@ export default function HomeScreen() {
         return;
       }
 
-      // Set user data from stored credentials
       setUser({
         id: credentials.userId,
         email: credentials.email,
         admin: false,
         suspended: false,
-        pinned: false,
         created_at: new Date().toISOString(),
       });
 
-      // Load data
       const [pinnedData, statsData] = await Promise.all([
         getPinnedReports(),
         getOverviewStats(),
       ]);
 
-      // Handle different response formats
       const reports =
         pinnedData.pinned_reports || pinnedData.reports || pinnedData || [];
       setPinnedReports(Array.isArray(reports) ? reports : []);
       setStats(statsData);
     } catch (err: any) {
       console.error("Error loading home data:", err);
-
-      // Handle specific authentication errors
       if (
         err.message?.includes("not authenticated") ||
         err.message?.includes("User ID")
@@ -87,7 +79,6 @@ export default function HomeScreen() {
     loadHomeData();
   }, []);
 
-  // Status styles mapping con colores de la paleta
   const statusStyles: Record<string, any> = {
     open: {
       backgroundColor: colors.reportStatus.openLight,
@@ -170,11 +161,11 @@ export default function HomeScreen() {
     );
   }
 
-  // Show login prompt if no user data
   if (error && error.includes("log in")) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loginContainer}>
+        <View className="login" style={styles.loginContainer}>
+          {/* You can switch this to <Text style={styles.header}>Home</Text> if you want the fixed header even on login */}
           <Text variant="headlineMedium" style={styles.loginTitle}>
             Welcome
           </Text>
@@ -196,6 +187,11 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed header outside ScrollView (Option A) */}
+      <Text variant="headlineMedium" style={styles.header}>
+        Home
+      </Text>
+
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -206,6 +202,7 @@ export default function HomeScreen() {
           />
         }
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
         {/* Welcome Section */}
         <Card style={styles.welcomeCard}>
@@ -245,7 +242,7 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text variant="headlineMedium" style={[styles.statNumber]}>
+                  <Text variant="headlineMedium" style={styles.statNumber}>
                     {stats.open_reports || 0}
                   </Text>
                   <Text variant="bodyMedium" style={styles.statLabel}>
@@ -253,7 +250,7 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text variant="headlineMedium" style={[styles.statNumber]}>
+                  <Text variant="headlineMedium" style={styles.statNumber}>
                     {stats.resolved_reports || 0}
                   </Text>
                   <Text variant="bodyMedium" style={styles.statLabel}>
@@ -424,6 +421,13 @@ const createStyles = (colors: any) =>
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    // Fixed header style (matches Explore/Profile)
+    header: {
+      margin: 16,
+      fontWeight: "bold",
+      color: colors.text,
+      textAlign: "center",
     },
     loadingContainer: {
       flex: 1,

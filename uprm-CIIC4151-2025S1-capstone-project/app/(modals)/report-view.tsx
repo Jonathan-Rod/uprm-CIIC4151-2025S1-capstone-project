@@ -178,14 +178,14 @@ export default function ReportViewModal() {
           </View>
         )}
 
-        <Button
+        {/* <Button
           mode="outlined"
           onPress={() => router.back()}
           style={styles.backButton}
           textColor={colors.text}
         >
           Back
-        </Button>
+        </Button> */}
       </ScrollView>
     </ThemedView>
   );

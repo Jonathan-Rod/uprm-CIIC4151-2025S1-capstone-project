@@ -191,7 +191,7 @@ export default function ContactSupportModal() {
 
           <Divider style={styles.divider} />
 
-          <Card style={styles.emergencyCard}>
+          {/* <Card style={styles.emergencyCard}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.emergencyTitle}>
                 Emergency Contact
@@ -210,7 +210,7 @@ export default function ContactSupportModal() {
                 Emergency Information
               </Button>
             </Card.Content>
-          </Card>
+          </Card> */}
 
           <Card style={styles.contactCard}>
             <Card.Content>
