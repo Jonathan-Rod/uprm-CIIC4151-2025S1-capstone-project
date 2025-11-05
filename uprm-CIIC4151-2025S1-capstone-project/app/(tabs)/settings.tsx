@@ -35,24 +35,21 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed header (outside ScrollView), same idea as Explore */}
+      <Text variant="headlineMedium" style={styles.header}>
+        Settings
+      </Text>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text variant="headlineMedium" style={styles.header}>
-          Settings
-        </Text>
-
         <List.Section title="General" titleStyle={styles.sectionTitle}>
           <List.Item
             title="About Us"
             description="Learn more about our app and mission"
             left={(props) => (
-              <List.Icon
-                {...props}
-                icon="information-outline"
-                color={colors.icon}
-              />
+              <List.Icon {...props} icon="information-outline" color={colors.icon} />
             )}
             onPress={() => handleNavigate("about-us")}
             style={styles.listItem}
@@ -63,11 +60,7 @@ export default function SettingsScreen() {
             title="Contact Support"
             description="Reach out to our support team"
             left={(props) => (
-              <List.Icon
-                {...props}
-                icon="help-circle-outline"
-                color={colors.icon}
-              />
+              <List.Icon {...props} icon="help-circle-outline" color={colors.icon} />
             )}
             onPress={handleContactSupport}
             style={styles.listItem}
@@ -83,11 +76,7 @@ export default function SettingsScreen() {
             title="Update Profile"
             description="Change your email or password"
             left={(props) => (
-              <List.Icon
-                {...props}
-                icon="account-edit-outline"
-                color={colors.icon}
-              />
+              <List.Icon {...props} icon="account-edit-outline" color={colors.icon} />
             )}
             onPress={() => handleNavigate("update-profile")}
             style={styles.listItem}
@@ -98,11 +87,7 @@ export default function SettingsScreen() {
             title="Account Security"
             description="Manage your account security settings"
             left={(props) => (
-              <List.Icon
-                {...props}
-                icon="shield-account-outline"
-                color={colors.icon}
-              />
+              <List.Icon {...props} icon="shield-account-outline" color={colors.icon} />
             )}
             onPress={() => handleNavigate("account-security")}
             style={styles.listItem}
@@ -118,11 +103,7 @@ export default function SettingsScreen() {
             title="Terms and Conditions"
             description="Read our terms of service"
             left={(props) => (
-              <List.Icon
-                {...props}
-                icon="file-document-outline"
-                color={colors.icon}
-              />
+              <List.Icon {...props} icon="file-document-outline" color={colors.icon} />
             )}
             onPress={() => handleNavigate("terms-and-conditions")}
             style={styles.listItem}
@@ -133,11 +114,7 @@ export default function SettingsScreen() {
             title="Privacy Policy"
             description="Learn how we protect your data"
             left={(props) => (
-              <List.Icon
-                {...props}
-                icon="shield-lock-outline"
-                color={colors.icon}
-              />
+              <List.Icon {...props} icon="shield-lock-outline" color={colors.icon} />
             )}
             onPress={() => handleNavigate("privacy-policy")}
             style={styles.listItem}
@@ -152,15 +129,12 @@ export default function SettingsScreen() {
           <List.Item
             title="Logout"
             description="Sign out of your account"
-            left={(props) => (
-              <List.Icon {...props} icon="logout" color={colors.icon} />
-            )}
+            left={(props) => <List.Icon {...props} icon="logout" color={colors.icon} />}
             onPress={() => handleNavigate("logout")}
             style={styles.listItem}
             titleStyle={styles.listItemTitle}
             descriptionStyle={styles.listItemDescription}
           />
-
           <List.Item
             title="Delete Account"
             description="Permanently delete your account and data"
@@ -174,7 +148,6 @@ export default function SettingsScreen() {
           />
         </List.Section>
 
-        {/* App Information */}
         <Text style={styles.versionText}>App Version 1.0.0</Text>
         <Text style={styles.buildText}>Build: 1.0.0.1</Text>
       </ScrollView>
@@ -188,15 +161,16 @@ const createStyles = (colors: any) =>
       flex: 1,
       backgroundColor: colors.background,
     },
-    scrollContent: {
-      padding: 16,
-      paddingBottom: 32,
-    },
+    // same spacing as Explore header (margin & centered)
     header: {
-      marginBottom: 24,
-      textAlign: "center",
+      margin: 16,
       fontWeight: "bold",
       color: colors.text,
+      textAlign: "center",
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingBottom: 32,
     },
     sectionTitle: {
       fontSize: 18,
@@ -214,7 +188,6 @@ const createStyles = (colors: any) =>
       fontWeight: "500",
     },
     listItemDescription: {
-      // color: colors.textSecondary,
       color: colors.textMuted,
       fontWeight: "100",
       fontSize: 12,
@@ -222,6 +195,7 @@ const createStyles = (colors: any) =>
     divider: {
       marginVertical: 16,
       backgroundColor: colors.divider,
+      height: StyleSheet.hairlineWidth,
     },
     versionText: {
       textAlign: "center",

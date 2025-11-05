@@ -293,7 +293,7 @@ export default function AccountSecurityModal() {
           </View>
 
           {/* Security Status */}
-          <View style={[styles.section, { borderLeftColor: colors.success }]}>
+          {/* <View style={[styles.section, { borderLeftColor: colors.success }]}>
             <Text
               variant="titleSmall"
               style={[styles.sectionTitle, { color: colors.success }]}
@@ -303,15 +303,15 @@ export default function AccountSecurityModal() {
             <Text variant="bodyMedium" style={styles.sectionText}>
               Overview of your current account security status and
               recommendations.
-            </Text>
+            </Text> */}
 
-            <View style={styles.statusItems}>
+            {/* <View style={styles.statusItems}>
               <View style={styles.statusItem}>
                 <Text style={styles.statusLabel}>Password Strength:</Text>
                 <Text style={[styles.statusValue, { color: colors.success }]}>
                   Strong
                 </Text>
-              </View>
+              </View> */}
               {/* <View style={styles.statusItem}>
                 <Text style={styles.statusLabel}>2FA Status:</Text>
                 <Text
@@ -327,14 +327,14 @@ export default function AccountSecurityModal() {
                   {settings.twoFactorAuth ? "Enabled" : "Disabled"}
                 </Text>
               </View> */}
-              <View style={styles.statusItem}>
+              {/* <View style={styles.statusItem}>
                 <Text style={styles.statusLabel}>Last Login:</Text>
                 <Text style={styles.statusValue}>
                   {new Date().toLocaleDateString()}
                 </Text>
               </View>
-            </View>
-          </View>
+            </View> */}
+          {/* </View> */}
 
           {/* Security Tips */}
           {/* <View style={[styles.section, { borderLeftColor: colors.secondary }]}>
