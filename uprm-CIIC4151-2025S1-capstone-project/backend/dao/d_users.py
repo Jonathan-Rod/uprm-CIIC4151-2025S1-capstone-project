@@ -174,18 +174,19 @@ class UsersDAO:
         query = """
             SELECT
                 u.id, u.email, u.created_at,
-                COALESCE(r.total_reports, 0)              AS total_reports,
-                COALESCE(r.open_reports, 0)               AS open_reports,
-                COALESCE(r.resolved_reports, 0)           AS resolved_reports,
-                COALESCE(r.in_progress_reports, 0)        AS in_progress_reports,
-                COALESCE(pr.pinned_reports_count, 0)      AS pinned_reports_count,
-                COALESCE(r.avg_rating_given, 0)           AS avg_rating_given,
-                COALESCE(r.last_report_date, NULL)        AS last_report_date
+                COALESCE(u.total_reports, 0)                 AS total_reports,        -- lifetime (immutable)
+                COALESCE(r.current_reports, 0)               AS current_reports,      -- live count in reports table
+                COALESCE(r.open_reports, 0)                  AS open_reports,
+                COALESCE(r.resolved_reports, 0)              AS resolved_reports,
+                COALESCE(r.in_progress_reports, 0)           AS in_progress_reports,
+                COALESCE(pr.pinned_reports_count, 0)         AS pinned_reports_count,
+                COALESCE(r.avg_rating_given, 0)              AS avg_rating_given,
+                COALESCE(r.last_report_date, NULL)           AS last_report_date
             FROM users u
             LEFT JOIN (
                 SELECT
                     created_by,
-                    COUNT(*)                                           AS total_reports,
+                    COUNT(*)                                           AS current_reports,
                     COUNT(*) FILTER (WHERE status='open')              AS open_reports,
                     COUNT(*) FILTER (WHERE status='resolved')          AS resolved_reports,
                     COUNT(*) FILTER (WHERE status='in_progress')       AS in_progress_reports,
@@ -212,13 +213,16 @@ class UsersDAO:
                 "user_id": result[0],
                 "email": result[1],
                 "created_at": result[2],
-                "total_reports": result[3],
-                "open_reports": result[4],
-                "resolved_reports": result[5],
-                "in_progress_reports": result[6],
-                "pinned_reports_count": result[7],
-                "avg_rating_given": float(result[8]) if result[8] else 0,
+                "total_reports": result[3],           # ← lifetime “Filed”
+                "current_reports": result[4],         # optional: current live count in reports
+                "open_reports": result[5],
+                "resolved_reports": result[6],
+                "in_progress_reports": result[7],
+                "pinned_reports_count": result[8],
+                "avg_rating_given": float(result[9]) if result[9] else 0,
+                "last_report_date": result[10],
             }
+
 
     def validate_credentials(self, email, password):
         """Validate user credentials without returning password"""
