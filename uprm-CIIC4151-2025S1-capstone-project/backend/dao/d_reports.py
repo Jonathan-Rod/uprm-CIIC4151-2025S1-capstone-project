@@ -71,8 +71,14 @@ class ReportsDAO:
                 query,
                 (title, description, category, location_id, image_url, created_by),
             )
+            new_report = cur.fetchone()
+            if created_by is not None:
+                cur.execute(
+                    "UPDATE users SET total_reports = total_reports + 1 WHERE id = %s",
+                    (created_by,)
+                )
             self.conn.commit()
-            return cur.fetchone()
+            return new_report
 
     def update_report(
         self,
