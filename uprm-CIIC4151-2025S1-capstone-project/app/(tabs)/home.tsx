@@ -1,3 +1,5 @@
+// Merge 
+
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View, ScrollView, RefreshControl } from "react-native";
@@ -205,7 +207,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Welcome Section */}
-        <Card style={styles.welcomeCard}>
+        {/* <Card style={styles.welcomeCard}>
           <Card.Content>
             <Text variant="titleLarge" style={styles.welcomeTitle}>
               Welcome back!
@@ -223,7 +225,7 @@ export default function HomeScreen() {
               </Chip>
             )}
           </Card.Content>
-        </Card>
+        </Card> */}
 
         {/* Statistics Overview */}
         {stats && (
