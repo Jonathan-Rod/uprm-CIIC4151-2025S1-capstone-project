@@ -183,9 +183,9 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
               styles.badge,
               { backgroundColor: statusStyles.backgroundColor },
             ]}
-            size={24}
+            size={16}
           >
-            {getStatusLabel(report.status)}
+            {/* {getStatusLabel(report.status)} */}
           </Badge>
         </View>
 
