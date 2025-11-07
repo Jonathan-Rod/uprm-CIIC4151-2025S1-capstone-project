@@ -193,11 +193,11 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
         <View style={styles.metaRow}>
           <Chip
             mode="outlined"
-            style={[styles.categoryChip, { borderColor: categoryColor }]}
-            textStyle={[styles.categoryText, { color: categoryColor }]}
+            style={styles.categoryChip}
+            textStyle={styles.categoryText}
             compact
           >
-            {getCategoryIcon(report.category)}{" "}
+            {/* {getCategoryIcon(report.category)}{" "} */}
             {getCategoryLabel(report.category)}
           </Chip>
           <Text variant="bodySmall" style={styles.reportId}>
