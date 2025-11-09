@@ -4,6 +4,7 @@ import { Badge, Card, Text, Chip } from "react-native-paper";
 import type { ReportData } from "@/types/interfaces";
 import { ReportStatus, ReportCategory } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface ReportCardProps {
   report: Omit<ReportData, "category"> & { category: ReportCategory };
@@ -213,8 +214,14 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
         {/* Metadata */}
         <View style={styles.metadata}>
           <View style={styles.metaItem}>
+            <MaterialCommunityIcons
+              name="calendar-plus"
+              size={14}
+              color={colors.textMuted}
+              style={styles.metaIcon}
+            />
             <Text variant="bodySmall" style={styles.metaLabel}>
-              📅 Created:
+              Created at:
             </Text>
             <Text variant="bodySmall" style={styles.metaValue}>
               {formatDate(report.created_at)}
@@ -223,10 +230,19 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.resolved_at && (
             <View style={styles.metaItem}>
+              <MaterialCommunityIcons
+                name="calendar-check"
+                size={14}
+                color={colors.success}
+                style={styles.metaIcon}
+              />
               <Text variant="bodySmall" style={styles.metaLabel}>
-                ✅ Resolved:
+                Resolved at:
               </Text>
-              <Text variant="bodySmall" style={styles.metaValue}>
+              <Text
+                variant="bodySmall"
+                style={[styles.metaValue, styles.resolvedValue]}
+              >
                 {formatDate(report.resolved_at)}
               </Text>
             </View>
@@ -234,11 +250,17 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.rating && (
             <View style={styles.metaItem}>
+              <MaterialCommunityIcons
+                name="thumb-up-outline"
+                size={14}
+                color={colors.warning}
+                style={styles.metaIcon}
+              />
               <Text variant="bodySmall" style={styles.metaLabel}>
-                ⭐ Rating:
+                Rating:
               </Text>
-              <Text variant="bodySmall" style={styles.metaValue}>
-                {report.rating}/5
+              <Text variant="bodySmall" style={styles.ratingValue}>
+                {report.rating}
               </Text>
             </View>
           )}
@@ -288,10 +310,13 @@ const createStyles = (colors: any) =>
     categoryChip: {
       height: 28,
       borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.chip.background,
     },
     categoryText: {
       fontSize: 12,
       fontWeight: "500",
+      color: colors.chip.text,
     },
     reportId: {
       fontWeight: "500",
@@ -302,19 +327,30 @@ const createStyles = (colors: any) =>
       color: colors.textSecondary,
     },
     metadata: {
-      gap: 6,
+      gap: 8,
     },
     metaItem: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+      gap: 8,
+    },
+    metaIcon: {
+      marginRight: 4,
     },
     metaLabel: {
-      fontWeight: "500",
+      fontWeight: "600",
       color: colors.textMuted,
     },
     metaValue: {
-      fontWeight: "400",
+      fontWeight: "500",
       color: colors.text,
+    },
+    resolvedValue: {
+      color: colors.success,
+      fontWeight: "600",
+    },
+    ratingValue: {
+      color: colors.warning,
+      fontWeight: "600",
+      fontSize: 14,
     },
   });
