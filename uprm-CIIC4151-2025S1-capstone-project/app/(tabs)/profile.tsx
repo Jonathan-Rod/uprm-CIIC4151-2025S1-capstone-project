@@ -1,20 +1,25 @@
-// 
-
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, RefreshControl, View } from "react-native";
-import { Text, ActivityIndicator, Button, List } from "react-native-paper";
+import { Text, ActivityIndicator, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+
+// Componentes
 import AdminStats from "@/components/AdminStats";
-import PinnedReports from "@/components/PinnedReports";
 import ReportStats from "@/components/ReportStats";
+import StatsOverviewCard from "@/components/StatsOverviewCard";
 import UserCard from "@/components/UserCard";
-import VisitedReports from "@/components/VisitedReports";
+import StatsSwitchCard from "@/components/StatsSwitchCard";
+import RecentActivitySection from "@/components/RecentActivitySection";
+import ProfileErrorState from "@/components/ProfileErrorState";
+import NoActivityState from "@/components/NoActivityState";
+
+// Utils
 import {
   getUserStats,
-  getPinnedReports,
   getReports,
   getAdminStats,
+  getOverviewStats,
 } from "@/utils/api";
 import { getStoredCredentials } from "@/utils/auth";
 import { type ReportData, type UserSession } from "@/types/interfaces";
@@ -26,14 +31,13 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<UserSession | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
   const [adminStats, setAdminStats] = useState<any>(null);
-  const [pinnedReports, setPinnedReports] = useState<ReportData[]>([]);
+  const [systemStats, setSystemStats] = useState<any>(null);
   const [allReports, setAllReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [expandedRecentActivity, setExpandedRecentActivity] = useState(false);
-  const handlePressRecentActivity = () =>
-    setExpandedRecentActivity(!expandedRecentActivity);
+  const [showSystemStats, setShowSystemStats] = useState(false);
+  const [expandedRecentActivity, setExpandedRecentActivity] = useState(false); // Nuevo estado
 
   const loadProfileData = async () => {
     try {
@@ -58,29 +62,23 @@ export default function ProfileScreen() {
       };
       setUser(userData);
 
-      const [statsData, pinnedData, reportsData] = await Promise.all([
+      const [statsData, reportsData, systemStatsData] = await Promise.all([
         getUserStats(userData.id).catch((err) => {
           console.warn("Failed to load user stats:", err);
           return null;
-        }),
-        getPinnedReports().catch((err) => {
-          console.warn("Failed to load pinned reports:", err);
-          return { pinned_reports: [] };
         }),
         getReports(1, 100).catch((err) => {
           console.warn("Failed to load reports:", err);
           return { reports: [] };
         }),
+        getOverviewStats().catch((err) => {
+          console.warn("Failed to load system stats:", err);
+          return null;
+        }),
       ]);
 
       setUserStats(statsData);
-
-      const pinnedReportsData =
-        pinnedData.pinned_reports || pinnedData.reports || pinnedData || [];
-      setPinnedReports(
-        Array.isArray(pinnedReportsData) ? pinnedReportsData : []
-      );
-
+      setSystemStats(systemStatsData);
       setAllReports(reportsData.reports || []);
 
       if (userData.admin) {
@@ -116,6 +114,17 @@ export default function ProfileScreen() {
     loadProfileData();
   }, []);
 
+  const handleReportPress = (reportId: number) => {
+    router.push({
+      pathname: "/(modals)/report-view",
+      params: { id: reportId.toString() },
+    });
+  };
+
+  const handleToggleRecentActivity = () => {
+    setExpandedRecentActivity(!expandedRecentActivity);
+  };
+
   const getUserSpecificStats = () => {
     if (!user || !allReports.length) {
       return { lastThreeVisited: [] };
@@ -129,11 +138,7 @@ export default function ProfileScreen() {
   };
 
   const userSpecificStats = getUserSpecificStats();
-
-  const handleLoginRedirect = () => {
-    router.replace("/");
-  };
-
+  const handleLoginRedirect = () => router.replace("/");
   const styles = createStyles(colors);
 
   if (loading) {
@@ -172,7 +177,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Fixed header outside the scroll area (same pattern as Explore) */}
       <Text variant="headlineMedium" style={styles.header}>
         Profile
       </Text>
@@ -190,28 +194,27 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {error && !error.includes("log in") ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Error: {error}</Text>
-            <Button
-              mode="outlined"
-              onPress={loadProfileData}
-              style={styles.retryButton}
-              textColor={colors.error}
-            >
-              Retry
-            </Button>
-          </View>
+          <ProfileErrorState error={error} onRetry={loadProfileData} />
         ) : (
           <>
             <UserCard user={user} />
 
-            <ReportStats
-              filed={userStats?.total_reports}
-              resolved={userStats?.resolved_reports}
-              pending={userStats?.open_reports}
-              pinned={userStats?.pinned_reports_count}
-              lastReportDate={userStats?.last_report_date}
+            <StatsSwitchCard
+              showSystemStats={showSystemStats}
+              onToggle={setShowSystemStats}
             />
+
+            {showSystemStats ? (
+              <StatsOverviewCard stats={systemStats} />
+            ) : (
+              <ReportStats
+                filed={userStats?.total_reports}
+                resolved={userStats?.resolved_reports}
+                pending={userStats?.open_reports}
+                pinned={userStats?.pinned_reports_count}
+                lastReportDate={userStats?.last_report_date}
+              />
+            )}
 
             {user?.admin && adminStats && (
               <AdminStats
@@ -221,36 +224,16 @@ export default function ProfileScreen() {
               />
             )}
 
-            {pinnedReports.length > 0 && (
-              <PinnedReports reports={pinnedReports} />
-            )}
+            <RecentActivitySection
+              reports={userSpecificStats.lastThreeVisited}
+              expanded={expandedRecentActivity}
+              onToggle={handleToggleRecentActivity}
+              onReportPress={handleReportPress}
+            />
 
-            {userSpecificStats.lastThreeVisited.length > 0 && (
-              <List.Section style={{ margin: 0, padding: 0 }}>
-                <List.Accordion
-                  style={{ margin: 0, padding: 0 }}
-                  title={`Recent Activity (${userSpecificStats.lastThreeVisited.length})`}
-                  left={(props) => <List.Icon {...props} icon="folder" />}
-                  expanded={expandedRecentActivity}
-                  onPress={handlePressRecentActivity}
-                >
-                  <VisitedReports reports={userSpecificStats.lastThreeVisited} />
-                </List.Accordion>
-              </List.Section>
+            {!error && userSpecificStats.lastThreeVisited.length === 0 && (
+              <NoActivityState />
             )}
-
-            {!error &&
-              pinnedReports.length === 0 &&
-              userSpecificStats.lastThreeVisited.length === 0 && (
-                <View style={styles.noDataContainer}>
-                  <Text style={styles.noDataText}>
-                    No activity data available yet.
-                  </Text>
-                  <Text style={styles.noDataSubtext}>
-                    Start creating reports to see your activity here.
-                  </Text>
-                </View>
-              )}
           </>
         )}
       </ScrollView>
@@ -264,7 +247,6 @@ const createStyles = (colors: any) =>
       flex: 1,
       backgroundColor: colors.background,
     },
-    // Header matches Explore: centered, bold, margin spacing
     header: {
       margin: 16,
       fontWeight: "bold",
@@ -300,32 +282,5 @@ const createStyles = (colors: any) =>
     loginButton: {
       marginTop: 16,
       backgroundColor: colors.button.primary,
-    },
-    errorContainer: {
-      alignItems: "center",
-      paddingVertical: 20,
-    },
-    errorText: {
-      color: colors.error,
-      textAlign: "center",
-      marginBottom: 12,
-    },
-    retryButton: {
-      marginTop: 8,
-      borderColor: colors.error,
-    },
-    noDataContainer: {
-      alignItems: "center",
-      paddingVertical: 30,
-    },
-    noDataText: {
-      fontSize: 16,
-      color: colors.textSecondary,
-      marginBottom: 8,
-    },
-    noDataSubtext: {
-      fontSize: 14,
-      color: colors.textMuted,
-      textAlign: "center",
     },
   });

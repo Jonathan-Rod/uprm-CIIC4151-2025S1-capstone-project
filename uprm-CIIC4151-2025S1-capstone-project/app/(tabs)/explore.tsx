@@ -1,20 +1,20 @@
+import FABCreateReport from "@/components/FABCreateReport";
+import ReportCard from "@/components/ReportCard";
+import { useAppColors } from "@/hooks/useAppColors";
+import type { ReportCategory, ReportData } from "@/types/interfaces";
+import { filterReports, getReports, searchReports } from "@/utils/api";
+import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  FAB,
-  Text,
   ActivityIndicator,
   Button,
-  Searchbar,
-  Menu,
   IconButton,
+  Menu,
+  Searchbar,
+  Text,
 } from "react-native-paper";
-import { useRouter } from "expo-router";
-import ReportCard from "@/components/ReportCard";
-import { getReports, searchReports, filterReports } from "@/utils/api";
-import type { ReportCategory, ReportData } from "@/types/interfaces";
-import { useAppColors } from "@/hooks/useAppColors";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 /** API response shape used by /reports, /reports/search, /reports/filter */
 type ReportsResponse = {
@@ -71,7 +71,12 @@ export default function ReportScreen() {
 
       if (statusFilter) {
         // Filtered results (simple first-page load)
-        resp = (await filterReports(statusFilter, undefined, 1, limit)) as ReportsResponse;
+        resp = (await filterReports(
+          statusFilter,
+          undefined,
+          1,
+          limit
+        )) as ReportsResponse;
         setReports(resp.reports || []);
         setCurrentPage(1);
         setTotalPages(1);
@@ -232,7 +237,9 @@ export default function ReportScreen() {
           {isSearching ? "No results found." : "No reports available."}
         </Text>
         <Text style={styles.emptySubtext}>
-          {isSearching ? "Try a different keyword." : "Be the first to create a report!"}
+          {isSearching
+            ? "Try a different keyword."
+            : "Be the first to create a report!"}
         </Text>
       </View>
     );
@@ -321,15 +328,7 @@ export default function ReportScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      <FAB
-        icon="plus"
-        style={[styles.fab, { backgroundColor: colors.button.primary }]}
-        onPress={handleCreateReport}
-        accessibilityLabel="Create new report"
-        accessibilityHint="Opens the report submission form"
-        accessibilityRole="button"
-        color={colors.button.text}
-      />
+      <FABCreateReport onPress={handleCreateReport} />
     </SafeAreaView>
   );
 }
