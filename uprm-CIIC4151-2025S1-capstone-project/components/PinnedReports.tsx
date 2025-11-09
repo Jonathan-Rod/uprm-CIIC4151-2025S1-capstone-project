@@ -1,107 +1,97 @@
-import { StyleSheet, View } from "react-native";
-import { Text, Card } from "react-native-paper";
-import type { ReportData } from "@/types/interfaces";
-import { ReportStatus } from "@/types/interfaces";
+import ReportCard from "@/components/ReportCard";
 import { useAppColors } from "@/hooks/useAppColors";
+import type { ReportCategory, ReportData } from "@/types/interfaces";
+import { StyleSheet, View } from "react-native";
+import { Button, Card, Text } from "react-native-paper";
 
-interface PinnedReportsProps {
-  reports: ReportData[];
+interface PinnedReportsCardProps {
+  pinnedReports: ReportData[];
+  error: string;
+  onViewAll: () => void;
+  onRetry: () => void;
+  onReportPress: (reportId: number) => void;
 }
 
-export default function PinnedReports({ reports }: PinnedReportsProps) {
+export default function PinnedReportsCard({
+  pinnedReports,
+  error,
+  onViewAll,
+  onRetry,
+  onReportPress,
+}: PinnedReportsCardProps) {
   const { colors } = useAppColors();
-
-  if (reports.length === 0) return null;
-
-  const getStatusStyle = (status: ReportStatus) => {
-    const baseStyle = {
-      fontSize: 12,
-      fontWeight: "500" as const,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 4,
-      overflow: "hidden" as const,
-    };
-
-    switch (status) {
-      case ReportStatus.OPEN:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.reportStatus.openLight,
-          color: colors.reportStatus.open,
-        };
-      case ReportStatus.IN_PROGRESS:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.reportStatus.in_progressLight,
-          color: colors.reportStatus.in_progress,
-        };
-      case ReportStatus.RESOLVED:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.reportStatus.resolvedLight,
-          color: colors.reportStatus.resolved,
-        };
-      case ReportStatus.CLOSED:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.reportStatus.closedLight,
-          color: colors.reportStatus.closed,
-        };
-      case ReportStatus.DENIED:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.reportStatus.deniedLight,
-          color: colors.reportStatus.denied,
-        };
-      default:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.chip.background,
-          color: colors.chip.text,
-        };
-    }
-  };
-
-  const formatStatus = (status: ReportStatus) => {
-    return status
-      .replace("_", " ")
-      .toLowerCase()
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
   const styles = createStyles(colors);
 
   return (
-    <Card style={styles.card}>
+    <Card style={styles.pinnedCard}>
       <Card.Content>
-        <Text variant="titleMedium" style={styles.title}>
-          📌 Pinned Reports ({reports.length})
-        </Text>
-
-        <View style={styles.reportsList}>
-          {reports.map((report) => {
-            const statusStyle = getStatusStyle(report.status);
-
-            return (
-              <View key={report.id} style={styles.reportItem}>
-                <Text style={styles.reportTitle} numberOfLines={2}>
-                  {report.title}
-                </Text>
-                <View style={styles.reportMeta}>
-                  <Text style={[styles.status, statusStyle]}>
-                    {formatStatus(report.status)}
-                  </Text>
-                  <Text style={styles.date}>
-                    {new Date(report.created_at).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Your Pinned Reports
+          </Text>
+          {pinnedReports.length > 0 && (
+            <Button
+              mode="text"
+              compact
+              onPress={onViewAll}
+              textColor={colors.primary}
+            >
+              View All
+            </Button>
+          )}
         </View>
+
+        {error && !error.includes("log in") ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Error: {error}</Text>
+            <Button
+              mode="outlined"
+              onPress={onRetry}
+              style={styles.retryButton}
+              textColor={colors.error}
+            >
+              Retry
+            </Button>
+          </View>
+        ) : pinnedReports.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No pinned reports yet</Text>
+            <Text style={styles.emptySubtext}>
+              Pin important reports to see them here
+            </Text>
+            <Button
+              mode="contained"
+              onPress={onViewAll}
+              style={styles.exploreButton}
+              textColor={colors.button.text}
+            >
+              Explore Reports
+            </Button>
+          </View>
+        ) : (
+          <>
+            {pinnedReports.slice(0, 5).map((report) => (
+              <ReportCard
+                key={report.id}
+                report={{
+                  ...report,
+                  category: report.category as ReportCategory,
+                }}
+                onPress={() => onReportPress(report.id)}
+              />
+            ))}
+            {pinnedReports.length > 5 && (
+              <Button
+                mode="text"
+                onPress={onViewAll}
+                style={styles.viewMoreButton}
+                textColor={colors.primary}
+              >
+                View {pinnedReports.length - 5} more pinned reports
+              </Button>
+            )}
+          </>
+        )}
       </Card.Content>
     </Card>
   );
@@ -109,44 +99,54 @@ export default function PinnedReports({ reports }: PinnedReportsProps) {
 
 const createStyles = (colors: any) =>
   StyleSheet.create({
-    card: {
-      marginBottom: 8,
-      elevation: 2,
-      boxShadow: `0px 1px 2px ${colors.border || "#0000001a"}`,
-      backgroundColor: colors.card,
-    },
-    title: {
-      fontWeight: "600",
+    pinnedCard: {
       marginBottom: 16,
-      fontSize: 16,
-      color: colors.text,
+      backgroundColor: colors.surface,
     },
-    reportsList: {
-      gap: 12,
-    },
-    reportItem: {
-      padding: 12,
-      backgroundColor: colors.backgroundMuted,
-      borderRadius: 8,
-      borderLeftWidth: 3,
-      borderLeftColor: colors.info,
-    },
-    reportTitle: {
-      fontWeight: "500",
-      marginBottom: 8,
-      lineHeight: 18,
-      color: colors.text,
-    },
-    reportMeta: {
+    sectionHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+      marginBottom: 12,
     },
-    status: {
-      // Styles applied dynamically in getStatusStyle
+    sectionTitle: {
+      fontWeight: "bold",
+      marginBottom: 16,
+      color: colors.text,
     },
-    date: {
-      fontSize: 12,
+    errorContainer: {
+      alignItems: "center",
+      paddingVertical: 20,
+    },
+    errorText: {
+      textAlign: "center",
+      marginBottom: 12,
+      color: colors.error,
+    },
+    retryButton: {
+      marginTop: 8,
+      borderColor: colors.error,
+    },
+    emptyContainer: {
+      alignItems: "center",
+      paddingVertical: 30,
+    },
+    emptyText: {
+      fontSize: 16,
+      marginBottom: 8,
+      color: colors.textSecondary,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      textAlign: "center",
+      marginBottom: 20,
       color: colors.textMuted,
+    },
+    exploreButton: {
+      marginTop: 8,
+      backgroundColor: colors.button.primary,
+    },
+    viewMoreButton: {
+      marginTop: 8,
     },
   });
