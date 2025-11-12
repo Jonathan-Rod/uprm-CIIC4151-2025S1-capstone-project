@@ -365,3 +365,24 @@ class UsersHandler:
             return jsonify(stats), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+        
+    def upgrade_to_admin(self, user_id: int, data: dict):
+        try:
+            code = (data or {}).get("code", "")
+            if not code or not code.strip():
+                return jsonify({"error_msg": "Missing code"}), HTTP_STATUS.BAD_REQUEST
+
+            dao = UsersDAO()
+            result = dao.redeem_admin_code_and_promote(user_id, code)
+
+            return jsonify({
+                "success": True,
+                "department": result["department"],
+                "already_admin": result["already_admin"],
+                "user_id": user_id,
+            }), HTTP_STATUS.OK
+
+        except ValueError as ve:
+            return jsonify({"error_msg": str(ve)}), HTTP_STATUS.BAD_REQUEST
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR

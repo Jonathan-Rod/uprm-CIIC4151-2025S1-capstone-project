@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import jsonify
 from dao.d_reports import ReportsDAO
 from constants import HTTP_STATUS
 
@@ -21,17 +21,14 @@ class ReportsHandler:
             "rating": report[12],
         }
 
-    def get_all_reports(self, page=1, limit=10):
+    def get_all_reports(self, page=1, limit=10, sort=None):
         try:
             offset = (page - 1) * limit
-
             dao = ReportsDAO()
-            reports = dao.get_reports_paginated(limit, offset)
+            reports = dao.get_reports_paginated(limit, offset, sort=sort)
             total_count = dao.get_total_report_count()
             total_pages = (total_count + limit - 1) // limit
-
             reports_dict_list = [self.map_to_dict(report) for report in reports]
-
             return (
                 jsonify(
                     {
@@ -52,36 +49,30 @@ class ReportsHandler:
             report = dao.get_report_by_id(report_id)
             if not report:
                 return jsonify({"error_msg": "Report not found"}), HTTP_STATUS.NOT_FOUND
-
             return jsonify(self.map_to_dict(report)), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
     def create_report(self, data):
         try:
-            # Extract all fields from the request data
             title = data.get("title")
             description = data.get("description")
             category = data.get("category", "other")
             location_id = data.get("location_id")
             image_url = data.get("image_url")
-            created_by = data.get("user_id")  # Get user_id from request body
+            created_by = data.get("user_id")
 
-            # Required fields validation
             if not title or not description:
                 return (
                     jsonify({"error_msg": "Title and description are required"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
-
-            # Validate user_id is provided
             if not created_by:
                 return (
                     jsonify({"error_msg": "User ID is required"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
 
-            # Validate category
             valid_categories = [
                 "pothole",
                 "street_light",
@@ -109,13 +100,11 @@ class ReportsHandler:
                 image_url=image_url,
                 created_by=created_by,
             )
-
             if not inserted_report:
                 return (
                     jsonify({"error_msg": "Failed to create report"}),
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
-
             return jsonify(self.map_to_dict(inserted_report)), HTTP_STATUS.CREATED
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -123,18 +112,14 @@ class ReportsHandler:
     def update_report(self, report_id, data):
         try:
             dao = ReportsDAO()
-
             if not data:
                 return (
                     jsonify({"error_msg": "Missing request data"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
-
-            # Check if report exists
             if not dao.get_report_by_id(report_id):
                 return jsonify({"error_msg": "Report not found"}), HTTP_STATUS.NOT_FOUND
 
-            # Extract updatable fields
             status = data.get("status")
             rating = data.get("rating")
             title = data.get("title")
@@ -146,11 +131,8 @@ class ReportsHandler:
             location_id = data.get("location_id")
             image_url = data.get("image_url")
 
-            # Validate status if provided
-            if status and status not in ["resolved", "denied", "in_progress", "open"]:
+            if status and status not in ["resolved", "denied", "in_progress", "open", "closed"]:
                 return jsonify({"error_msg": "Invalid status"}), HTTP_STATUS.BAD_REQUEST
-
-            # Validate category if provided
             if category and category not in [
                 "pothole",
                 "street_light",
@@ -159,12 +141,7 @@ class ReportsHandler:
                 "sanitation",
                 "other",
             ]:
-                return (
-                    jsonify({"error_msg": "Invalid category"}),
-                    HTTP_STATUS.BAD_REQUEST,
-                )
-
-            # Validate rating if provided
+                return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
             if rating and (rating < 1 or rating > 5):
                 return (
                     jsonify({"error_msg": "Rating must be between 1 and 5"}),
@@ -184,13 +161,11 @@ class ReportsHandler:
                 location_id=location_id,
                 image_url=image_url,
             )
-
             if not updated_report:
                 return (
                     jsonify({"error_msg": "Failed to update report"}),
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
-
             return jsonify(self.map_to_dict(updated_report)), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -198,63 +173,42 @@ class ReportsHandler:
     def delete_report(self, report_id):
         try:
             dao = ReportsDAO()
-
             if not dao.get_report_by_id(report_id):
                 return jsonify({"error_msg": "Report not found"}), HTTP_STATUS.NOT_FOUND
-
             success = dao.delete_report(report_id)
             if not success:
                 return (
                     jsonify({"error_msg": "Failed to delete report"}),
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
-
             return "", HTTP_STATUS.NO_CONTENT
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
-    def search_reports(self, query, page=1, limit=10):
+    # ---------- UNIFIED ENTRY POINT ----------
+    def search_reports(self, query=None, page=1, limit=10, status=None, category=None, sort=None):
+        """
+        Handles:
+        - search only      (/reports/search?q=...)
+        - filter only      (/reports/search?status=... [&category=...] [&sort=asc|desc])
+        - search + filter  (/reports/search?q=...&status=... [&category=...] [&sort=...])
+        """
         try:
-            if not query or len(query.strip()) == 0:
+            q = (query or "").strip()
+            s = (status or "").strip()
+            c = (category or "").strip()
+            order = (sort or "").strip().lower()  # 'asc' or 'desc'
+
+            if not q and not s and not c:
                 return (
-                    jsonify({"error_msg": "Search query is required"}),
+                    jsonify({"error_msg": "Provide at least one of: q, status, category"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
 
-            offset = (page - 1) * limit
-            dao = ReportsDAO()
-
-            reports = dao.search_reports(query, limit, offset)
-            total_count = dao.get_search_reports_count(query)
-            total_pages = (total_count + limit - 1) // limit
-
-            reports_dict_list = [self.map_to_dict(report) for report in reports]
-
-            return (
-                jsonify(
-                    {
-                        "reports": reports_dict_list,
-                        "totalPages": total_pages,
-                        "currentPage": page,
-                        "totalCount": total_count,
-                        "query": query,
-                    }
-                ),
-                HTTP_STATUS.OK,
-            )
-        except Exception as e:
-            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
-
-    def filter_reports(self, status, category, page=1, limit=10):
-        try:
-            offset = (page - 1) * limit
-            dao = ReportsDAO()
-
-            # Validate status and category if provided
-            if status and status not in ["resolved", "denied", "in_progress", "open"]:
+            if s and s not in ["resolved", "denied", "in_progress", "open", "closed"]:
                 return jsonify({"error_msg": "Invalid status"}), HTTP_STATUS.BAD_REQUEST
 
-            if category and category not in [
+            if c and c not in [
                 "pothole",
                 "street_light",
                 "traffic_signal",
@@ -262,43 +216,56 @@ class ReportsHandler:
                 "sanitation",
                 "other",
             ]:
-                return (
-                    jsonify({"error_msg": "Invalid category"}),
-                    HTTP_STATUS.BAD_REQUEST,
-                )
+                return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
 
-            reports = dao.filter_reports(status, category, limit, offset)
-            total_count = dao.get_filter_reports_count(status, category)
+            offset = (page - 1) * limit
+            dao = ReportsDAO()
+
+            rows, total_count = dao.search_reports(
+                q=q if q else None,
+                status=s if s else None,
+                category=c if c else None,
+                limit=limit,
+                offset=offset,
+                sort=order if order in ("asc", "desc") else None,
+            )
+
             total_pages = (total_count + limit - 1) // limit
-
-            reports_dict_list = [self.map_to_dict(report) for report in reports]
+            reports = [self.map_to_dict(r) for r in rows]
 
             return (
                 jsonify(
                     {
-                        "reports": reports_dict_list,
+                        "reports": reports,
                         "totalPages": total_pages,
                         "currentPage": page,
                         "totalCount": total_count,
-                        "filters": {"status": status, "category": category},
+                        "query": q or None,
+                        "status": s or None,
+                        "category": c or None,
+                        "sort": (order if order in ("asc", "desc") else "desc"),
                     }
                 ),
                 HTTP_STATUS.OK,
             )
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+    # ----------------------------------------
+
+    # Backward-compat: keep /reports/filter but delegate (now supports sort).
+    def filter_reports(self, status, category, page=1, limit=10, sort=None):
+        return self.search_reports(
+            query=None, page=page, limit=limit, status=status, category=category, sort=sort
+        )
 
     def get_reports_by_user(self, user_id, page=1, limit=10):
         try:
             offset = (page - 1) * limit
             dao = ReportsDAO()
-
             reports = dao.get_reports_by_user(user_id, limit, offset)
             total_count = dao.get_user_reports_count(user_id)
             total_pages = (total_count + limit - 1) // limit
-
             reports_dict_list = [self.map_to_dict(report) for report in reports]
-
             return (
                 jsonify(
                     {
@@ -317,10 +284,8 @@ class ReportsHandler:
     def validate_report(self, report_id, data):
         try:
             dao = ReportsDAO()
-
             if not dao.get_report_by_id(report_id):
                 return jsonify({"error_msg": "Report not found"}), HTTP_STATUS.NOT_FOUND
-
             try:
                 admin_id = data["admin_id"]
             except KeyError:
@@ -328,17 +293,14 @@ class ReportsHandler:
                     jsonify({"error_msg": "Missing admin_id"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
-
             updated_report = dao.update_report(
                 report_id=report_id, validated_by=admin_id, status="in_progress"
             )
-
             if not updated_report:
                 return (
                     jsonify({"error_msg": "Failed to validate report"}),
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
-
             return jsonify(self.map_to_dict(updated_report)), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -346,10 +308,8 @@ class ReportsHandler:
     def resolve_report(self, report_id, data):
         try:
             dao = ReportsDAO()
-
             if not dao.get_report_by_id(report_id):
                 return jsonify({"error_msg": "Report not found"}), HTTP_STATUS.NOT_FOUND
-
             try:
                 admin_id = data["admin_id"]
             except KeyError:
@@ -357,20 +317,17 @@ class ReportsHandler:
                     jsonify({"error_msg": "Missing admin_id"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
-
             updated_report = dao.update_report(
                 report_id=report_id,
                 resolved_by=admin_id,
                 status="resolved",
-                resolved_at="NOW()",  # This will use PostgreSQL's NOW() function
+                resolved_at="NOW()",
             )
-
             if not updated_report:
                 return (
                     jsonify({"error_msg": "Failed to resolve report"}),
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
-
             return jsonify(self.map_to_dict(updated_report)), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -378,30 +335,23 @@ class ReportsHandler:
     def rate_report(self, report_id, data):
         try:
             dao = ReportsDAO()
-
             if not dao.get_report_by_id(report_id):
                 return jsonify({"error_msg": "Report not found"}), HTTP_STATUS.NOT_FOUND
-
             try:
                 rating = data["rating"]
             except KeyError:
                 return jsonify({"error_msg": "Missing rating"}), HTTP_STATUS.BAD_REQUEST
-
-            # Validate rating
             if rating < 1 or rating > 5:
                 return (
                     jsonify({"error_msg": "Rating must be between 1 and 5"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
-
             updated_report = dao.update_report(report_id=report_id, rating=rating)
-
             if not updated_report:
                 return (
                     jsonify({"error_msg": "Failed to rate report"}),
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
-
             return jsonify(self.map_to_dict(updated_report)), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -418,13 +368,11 @@ class ReportsHandler:
         try:
             dao = ReportsDAO()
             stats = dao.get_department_stats(department)
-
             if not stats:
                 return (
                     jsonify({"error_msg": "Department not found"}),
                     HTTP_STATUS.NOT_FOUND,
                 )
-
             return jsonify(stats), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
@@ -441,13 +389,10 @@ class ReportsHandler:
         try:
             offset = (page - 1) * limit
             dao = ReportsDAO()
-
             reports = dao.get_pending_reports(limit, offset)
             total_count = dao.get_pending_reports_count()
             total_pages = (total_count + limit - 1) // limit
-
             reports_dict_list = [self.map_to_dict(report) for report in reports]
-
             return (
                 jsonify(
                     {
@@ -466,13 +411,10 @@ class ReportsHandler:
         try:
             offset = (page - 1) * limit
             dao = ReportsDAO()
-
             reports = dao.get_assigned_reports(admin_id, limit, offset)
             total_count = dao.get_assigned_reports_count(admin_id)
             total_pages = (total_count + limit - 1) // limit
-
             reports_dict_list = [self.map_to_dict(report) for report in reports]
-
             return (
                 jsonify(
                     {

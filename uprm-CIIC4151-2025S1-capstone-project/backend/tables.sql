@@ -22,7 +22,7 @@ CREATE TABLE users (
     PASSWORD VARCHAR(255) NOT NULL,
     ADMIN BOOLEAN DEFAULT FALSE,
     suspended BOOLEAN DEFAULT FALSE,
-    pinned BOOLEAN DEFAULT FALSE,
+    pinned BOOLEAN DEFAULT FALSE, -- verify
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -99,6 +99,11 @@ CREATE TABLE pinned_reports (
     report_id INTEGER REFERENCES reports (id) ON DELETE CASCADE,
     pinned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, report_id)
+);
+
+CREATE TABLE admin_codes (
+  code VARCHAR PRIMARY KEY,
+  department VARCHAR NOT NULL CHECK (department IN ('DTOP','LUMA','AAA','DDS'))
 );
 
 -- Create indexes for better performance

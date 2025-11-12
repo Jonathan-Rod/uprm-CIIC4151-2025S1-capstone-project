@@ -201,27 +201,27 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
             {/* {getCategoryIcon(report.category)}{" "} */}
             {getCategoryLabel(report.category)}
           </Chip>
-          <Text variant="bodySmall" style={styles.reportId}>
+          {/* <Text variant="bodySmall" style={styles.reportId}>
             #{report.id}
-          </Text>
+          </Text> */}
         </View>
 
         {/* Description */}
-        <Text variant="bodyMedium" style={styles.description} numberOfLines={3}>
+        {/* <Text variant="bodyMedium" style={styles.description} numberOfLines={3}>
           {report.description}
-        </Text>
+        </Text> */}
 
         {/* Metadata */}
         <View style={styles.metadata}>
           <View style={styles.metaItem}>
-            <MaterialCommunityIcons
+            {/* <MaterialCommunityIcons
               name="calendar-plus"
               size={14}
               color={colors.textMuted}
               style={styles.metaIcon}
-            />
+            /> */}
             <Text variant="bodySmall" style={styles.metaLabel}>
-              Created at:
+              Created:
             </Text>
             <Text variant="bodySmall" style={styles.metaValue}>
               {formatDate(report.created_at)}
@@ -230,14 +230,14 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.resolved_at && (
             <View style={styles.metaItem}>
-              <MaterialCommunityIcons
+              {/* <MaterialCommunityIcons
                 name="calendar-check"
                 size={14}
                 color={colors.success}
                 style={styles.metaIcon}
-              />
+              /> */}
               <Text variant="bodySmall" style={styles.metaLabel}>
-                Resolved at:
+                Resolved:
               </Text>
               <Text
                 variant="bodySmall"
@@ -250,12 +250,12 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.rating && (
             <View style={styles.metaItem}>
-              <MaterialCommunityIcons
+              {/* <MaterialCommunityIcons
                 name="thumb-up-outline"
                 size={14}
                 color={colors.warning}
                 style={styles.metaIcon}
-              />
+              /> */}
               <Text variant="bodySmall" style={styles.metaLabel}>
                 Rating:
               </Text>

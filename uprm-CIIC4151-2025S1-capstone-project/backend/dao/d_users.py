@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 from load import load_db
 
+# Add near the top if not present
+VALID_DEPARTMENTS = ('DTOP', 'LUMA', 'AAA', 'DDS')
 
 class UsersDAO:
 
@@ -234,6 +236,53 @@ class UsersDAO:
         with self.conn.cursor() as cur:
             cur.execute(query, (email, password))
             return cur.fetchone()
+        
+    def redeem_admin_code_and_promote(self, user_id: int, code: str) -> dict:
+        """
+        Minimal flow:
+        - Look up `code` in admin_codes (you inserted it manually).
+        - If found, promote user to admin in that department.
+        - No deletion of codes. No expiration. No extra logging.
+        """
+        code = (code or "").strip()
+        if not code:
+            raise ValueError("Code cannot be empty")
+
+        with self.conn:
+            with self.conn.cursor() as cur:
+                # Ensure user exists (and grab current admin flag)
+                cur.execute("SELECT admin FROM users WHERE id = %s", (user_id,))
+                row = cur.fetchone()
+                if not row:
+                    raise ValueError("User not found")
+                already_admin = bool(row[0])
+
+                # Get department from your manually-inserted code
+                cur.execute("SELECT department FROM admin_codes WHERE code = %s", (code,))
+                row = cur.fetchone()
+                if not row:
+                    raise ValueError("Invalid code")
+
+                department = row[0]
+                if department not in VALID_DEPARTMENTS:
+                    # Extra guard; administrators table also enforces this via CHECK.
+                    raise ValueError("Invalid department for this code")
+
+                # Upsert into administrators (id is the same as users.id)
+                cur.execute(
+                    """
+                    INSERT INTO administrators (id, department)
+                    VALUES (%s, %s)
+                    ON CONFLICT (id) DO UPDATE
+                    SET department = EXCLUDED.department
+                    """,
+                    (user_id, department),
+                )
+
+                # Flip users.admin to TRUE
+                cur.execute("UPDATE users SET admin = TRUE WHERE id = %s", (user_id,))
+
+        return {"success": True, "department": department, "already_admin": already_admin}
 
     def close(self):
         if self.conn:
