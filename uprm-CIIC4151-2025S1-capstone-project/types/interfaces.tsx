@@ -15,7 +15,14 @@ export enum ReportCategory {
   TRAFFIC_SIGNAL = "traffic_signal",
   ROAD_DAMAGE = "road_damage",
   SANITATION = "sanitation",
-  OTHER = "other",
+  SINKHOLE = 'sinkhole',
+  ELECTRICAL_HAZARD = 'electrical_hazard',
+  FLOODING = 'flooding',
+  WATER_OUTAGE = 'water_outage',
+  WANDERING_WASTE = 'wandering_waste',
+  FALLEN_TREE = 'fallen_tree',
+  PIPE_LEAK = 'pipe_leak',
+  NONE = 'none',
 }
 
 export enum Department {
@@ -283,3 +290,9 @@ export interface CategoryChipProps {
   onPress?: () => void;
   selected?: boolean;
 }
+
+export interface AdminInfo {
+  admin: boolean;
+  department: string | null;
+}
+

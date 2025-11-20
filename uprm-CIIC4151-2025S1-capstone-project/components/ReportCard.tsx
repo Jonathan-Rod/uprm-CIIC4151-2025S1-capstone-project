@@ -4,7 +4,7 @@ import { Badge, Card, Text, Chip } from "react-native-paper";
 import type { ReportData } from "@/types/interfaces";
 import { ReportStatus, ReportCategory } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { buildImageUrl } from "@/utils/api";
 
 interface ReportCardProps {
   report: Omit<ReportData, "category"> & { category: ReportCategory };
@@ -75,25 +75,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
     }
   };
 
-  const getCategoryIcon = (category: ReportCategory) => {
-    switch (category) {
-      case ReportCategory.POTHOLE:
-        return "🕳️";
-      case ReportCategory.STREET_LIGHT:
-        return "💡";
-      case ReportCategory.TRAFFIC_SIGNAL:
-        return "🚦";
-      case ReportCategory.ROAD_DAMAGE:
-        return "🛣️";
-      case ReportCategory.SANITATION:
-        return "🧹";
-      case ReportCategory.OTHER:
-        return "📋";
-      default:
-        return "📄";
-    }
-  };
-
   const getCategoryLabel = (category: ReportCategory) => {
     switch (category) {
       case ReportCategory.POTHOLE:
@@ -106,29 +87,22 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
         return "Road Damage";
       case ReportCategory.SANITATION:
         return "Sanitation";
-      case ReportCategory.OTHER:
-        return "Other";
+      case ReportCategory.FLOODING:
+        return "Flooding";
+      case ReportCategory.WATER_OUTAGE:
+        return "Water Outage";
+      case ReportCategory.WANDERING_WASTE:
+        return "Wandering Waste";
+      case ReportCategory.ELECTRICAL_HAZARD:
+        return "Electrical Hazard";
+      case ReportCategory.SINKHOLE:
+        return "Sinkhole";
+      case ReportCategory.FALLEN_TREE:
+        return "Fallen Tree";
+      case ReportCategory.PIPE_LEAK:
+        return "Pipe Leak";
       default:
         return category;
-    }
-  };
-
-  const getCategoryColor = (category: ReportCategory) => {
-    switch (category) {
-      case ReportCategory.POTHOLE:
-        return colors.reportCategory.pothole;
-      case ReportCategory.STREET_LIGHT:
-        return colors.reportCategory.street_light;
-      case ReportCategory.TRAFFIC_SIGNAL:
-        return colors.reportCategory.traffic_signal;
-      case ReportCategory.ROAD_DAMAGE:
-        return colors.reportCategory.road_damage;
-      case ReportCategory.SANITATION:
-        return colors.reportCategory.sanitation;
-      case ReportCategory.OTHER:
-        return colors.reportCategory.other;
-      default:
-        return colors.textSecondary;
     }
   };
 
@@ -140,15 +114,20 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
     });
   };
 
-  // Check if the image URL is the placeholder
+  // ----------------------------------------------------------------------------
+  // IMAGE HANDLING
+  // ----------------------------------------------------------------------------
+  const rawImageUrl = report.image_url || "";
+
   const hasValidImage =
-    report.image_url &&
-    !report.image_url.includes("via.placeholder.com") &&
-    !report.image_url.includes("No+Image+Available");
+    !!rawImageUrl &&
+    !rawImageUrl.includes("via.placeholder.com") &&
+    !rawImageUrl.includes("No+Image+Available");
+
+  // Turn "/uploads/uuid.jpg" into "http://192.168.x.x:5000/uploads/uuid.jpg"
+  const finalImageUri = hasValidImage ? buildImageUrl(rawImageUrl) : undefined;
 
   const statusStyles = getStatusStyles(report.status);
-  const categoryColor = getCategoryColor(report.category);
-
   const styles = createStyles(colors);
 
   return (
@@ -159,19 +138,15 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
       accessibilityLabel={`Report card for ${report.title}`}
       testID={`report-card-${report.id}`}
     >
-      {/* Only show image if it's not the placeholder */}
-      {hasValidImage && (
-        <Card.Cover
-          source={{ uri: report.image_url }}
-          style={styles.cardCover}
-        />
+      {/* Show image only if we have a valid URL */}
+      {finalImageUri && (
+        <Card.Cover source={{ uri: finalImageUri }} style={styles.cardCover} />
       )}
 
       <Card.Content
         style={[
           styles.cardContent,
-          // Adjust padding if no image
-          !hasValidImage && styles.cardContentNoImage,
+          !finalImageUri && styles.cardContentNoImage,
         ]}
       >
         {/* Header with Title and Status */}
@@ -186,6 +161,7 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
             ]}
             size={16}
           >
+            {/* If you want the text inside the badge, uncomment: */}
             {/* {getStatusLabel(report.status)} */}
           </Badge>
         </View>
@@ -198,28 +174,17 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
             textStyle={styles.categoryText}
             compact
           >
-            {/* {getCategoryIcon(report.category)}{" "} */}
             {getCategoryLabel(report.category)}
           </Chip>
+          {/* If you want to show the report ID, uncomment: */}
           {/* <Text variant="bodySmall" style={styles.reportId}>
             #{report.id}
           </Text> */}
         </View>
 
-        {/* Description */}
-        {/* <Text variant="bodyMedium" style={styles.description} numberOfLines={3}>
-          {report.description}
-        </Text> */}
-
         {/* Metadata */}
         <View style={styles.metadata}>
           <View style={styles.metaItem}>
-            {/* <MaterialCommunityIcons
-              name="calendar-plus"
-              size={14}
-              color={colors.textMuted}
-              style={styles.metaIcon}
-            /> */}
             <Text variant="bodySmall" style={styles.metaLabel}>
               Created:
             </Text>
@@ -230,12 +195,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.resolved_at && (
             <View style={styles.metaItem}>
-              {/* <MaterialCommunityIcons
-                name="calendar-check"
-                size={14}
-                color={colors.success}
-                style={styles.metaIcon}
-              /> */}
               <Text variant="bodySmall" style={styles.metaLabel}>
                 Resolved:
               </Text>
@@ -250,12 +209,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.rating && (
             <View style={styles.metaItem}>
-              {/* <MaterialCommunityIcons
-                name="thumb-up-outline"
-                size={14}
-                color={colors.warning}
-                style={styles.metaIcon}
-              /> */}
               <Text variant="bodySmall" style={styles.metaLabel}>
                 Rating:
               </Text>
@@ -285,7 +238,7 @@ const createStyles = (colors: any) =>
       gap: 12,
     },
     cardContentNoImage: {
-      paddingTop: 16, // Extra padding when no image
+      paddingTop: 16,
     },
     headerRow: {
       flexDirection: "row",
@@ -322,19 +275,12 @@ const createStyles = (colors: any) =>
       fontWeight: "500",
       color: colors.textMuted,
     },
-    description: {
-      lineHeight: 20,
-      color: colors.textSecondary,
-    },
     metadata: {
       gap: 8,
     },
     metaItem: {
       flexDirection: "row",
       gap: 8,
-    },
-    metaIcon: {
-      marginRight: 4,
     },
     metaLabel: {
       fontWeight: "600",

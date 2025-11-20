@@ -5,58 +5,76 @@ from constants import HTTP_STATUS
 
 class AdministratorsHandler:
 
+    # -------------------------------------------------------
+    # MAPPERS
+    # -------------------------------------------------------
     def map_to_dict(self, administrator):
-        """Map basic administrator info to dictionary"""
-        if len(administrator) >= 3:  # Basic admin fields
-            return {
-                "id": administrator[0],
-                "user_id": administrator[1],
-                "department": administrator[2],
-            }
-        else:
-            return {
-                "id": administrator[0],
-                "user_id": administrator[1],
-                "department": administrator[2],
-            }
+        """
+        Basic admin info.
 
-    def map_to_dict_with_user_info(self, administrator):
-        """Map administrator with user info to dictionary"""
-        base_dict = {
+        Expected row (a.* only):
+        [0] id
+        [1] department
+        """
+        return {
             "id": administrator[0],
-            "user_id": administrator[1],
-            "department": administrator[2],
+            "user_id": administrator[0],   # admin id == user id
+            "department": administrator[1],
         }
 
-        # Add user info if available
+    def map_to_dict_with_user_info(self, administrator):
+        """
+        Admin with user info.
+
+        Expected row (a.*, u.email, u.suspended, u.created_at):
+        [0] id
+        [1] department
+        [2] email
+        [3] suspended
+        [4] user_created_at
+        """
+        base_dict = {
+            "id": administrator[0],
+            "user_id": administrator[0],   # admin id == user id
+            "department": administrator[1],
+        }
+
+        if len(administrator) > 2:
+            base_dict["email"] = administrator[2]
         if len(administrator) > 3:
-            base_dict["email"] = administrator[3]
-            base_dict["suspended"] = administrator[4]
-            base_dict["user_created_at"] = administrator[5]
+            base_dict["suspended"] = administrator[3]
+        if len(administrator) > 4:
+            base_dict["user_created_at"] = administrator[4]
 
         return base_dict
 
     def map_to_dict_with_stats(self, administrator):
-        """Map administrator with statistics to dictionary"""
-        base_dict = {
+        """
+        Admin with stats.
+
+        Expected row from get_all_admin_stats():
+            [0] id
+            [1] department
+            [2] email
+            [3] total_assigned_reports
+            [4] resolved_reports
+            [5] avg_rating
+            [6] resolved_personally
+        """
+        return {
             "id": administrator[0],
-            "user_id": administrator[1],
-            "department": administrator[2],
+            "user_id": administrator[0],   # admin id == user id
+            "department": administrator[1],
+            "email": administrator[2],
+            "total_assigned_reports": administrator[3],
+            "resolved_reports": administrator[4],
+            "avg_rating": float(administrator[5]) if administrator[5] else 0,
+            "resolved_personally": administrator[6],
         }
 
-        # Add stats if available
-        if len(administrator) > 3:
-            base_dict["email"] = administrator[3]
-            if len(administrator) > 4:
-                base_dict["total_assigned_reports"] = administrator[4]
-                base_dict["resolved_reports"] = administrator[5]
-                base_dict["avg_rating"] = (
-                    float(administrator[6]) if administrator[6] else 0
-                )
-                base_dict["resolved_personally"] = administrator[7]
-
-        return base_dict
-
+    # -------------------------------------------------------
+    # CRUD
+    # -------------------------------------------------------
     def get_all_administrators(self, page=1, limit=10):
         try:
             offset = (page - 1) * limit
@@ -138,10 +156,6 @@ class AdministratorsHandler:
                     ),
                     HTTP_STATUS.CONFLICT,
                 )
-
-            # Check if user exists and is not suspended (you might want to add this check)
-            # if not dao.user_exists(user_id):
-            #     return jsonify({"error_msg": "User not found"}), HTTP_STATUS.NOT_FOUND
 
             inserted_administrator = dao.create_administrator(user_id, department)
 
@@ -228,6 +242,9 @@ class AdministratorsHandler:
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
+    # -------------------------------------------------------
+    # BY DEPARTMENT / DETAILS
+    # -------------------------------------------------------
     def get_administrators_by_department(self, department):
         try:
             if not department:
@@ -282,9 +299,11 @@ class AdministratorsHandler:
                     HTTP_STATUS.NOT_FOUND,
                 )
 
+            # Expected row:
+            # [0] id, [1] department, [2] email, [3] suspended, [4] user_created_at, [5] assigned_department
             admin_dict = self.map_to_dict_with_user_info(administrator)
-            if len(administrator) > 6:  # Includes assigned_department
-                admin_dict["assigned_department"] = administrator[6]
+            if len(administrator) > 5:
+                admin_dict["assigned_department"] = administrator[5]
 
             return jsonify(admin_dict), HTTP_STATUS.OK
         except Exception as e:
@@ -311,6 +330,9 @@ class AdministratorsHandler:
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
+    # -------------------------------------------------------
+    # STATS
+    # -------------------------------------------------------
     def get_admin_stats(self, admin_id):
         try:
             dao = AdministratorsDAO()
@@ -351,8 +373,15 @@ class AdministratorsHandler:
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
+    # -------------------------------------------------------
+    # ADMIN INFO FOR FRONTEND (used by /administrators/check/<user_id> or /me/admin)
+    # -------------------------------------------------------
     def check_user_is_administrator(self, user_id):
-        """Check if a user is an administrator"""
+        """
+        Return admin flag + department for a given user.
+        This uses AdministratorsDAO.get_admin_info_for_user so it matches the
+        AdminInfo type in the frontend: { admin, department }.
+        """
         try:
             if not user_id:
                 return (
@@ -361,17 +390,21 @@ class AdministratorsHandler:
                 )
 
             dao = AdministratorsDAO()
-            is_admin = dao.is_user_administrator(user_id)
+            info = dao.get_admin_info_for_user(user_id)
 
-            return (
-                jsonify({"user_id": user_id, "is_administrator": is_admin}),
-                HTTP_STATUS.OK,
-            )
+            response = {
+                "user_id": user_id,
+                "admin": info["admin"],
+                "department": info["department"],
+            }
+
+            return jsonify(response), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
-    # Removed get_current_administrator method since it relied on sessions
-
+    # -------------------------------------------------------
+    # PERFORMANCE REPORT
+    # -------------------------------------------------------
     def get_administrator_performance_report(self):
         """Get performance report for administrators"""
         try:
@@ -411,5 +444,59 @@ class AdministratorsHandler:
                 ),
                 HTTP_STATUS.OK,
             )
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    # -------------------------------------------------------
+    # REPORTS VISIBLE TO ADMIN (DEPARTMENT FILTER)
+    # -------------------------------------------------------
+    def get_reports_for_admin(self, admin_id):
+        """Get reports filtered by the administrator's department"""
+        try:
+            dao = AdministratorsDAO()
+
+            # First, check if the admin exists
+            administrator = dao.get_administrator_by_id(admin_id)
+            if not administrator:
+                return (
+                    jsonify({"error_msg": "Administrator not found"}),
+                    HTTP_STATUS.NOT_FOUND,
+                )
+
+            # Fetch reports using the SQL-based department filter
+            reports = dao.get_reports_for_admin(admin_id)
+
+            reports_list = []
+            for r in reports:
+                reports_list.append(
+                    {
+                        "id": r[0],
+                        "title": r[1],
+                        "description": r[2],
+                        "status": r[3],
+                        "category": r[4],
+                        "created_by": r[5],
+                        "validated_by": r[6],
+                        "resolved_by": r[7],
+                        "created_at": r[8],
+                        "resolved_at": r[9],
+                        "location": r[10],
+                        "image_url": r[11],
+                        "rating": r[12],
+                    }
+                )
+
+            return (
+                jsonify(
+                    {
+                        "admin_id": admin_id,
+                        "department": administrator[1],  # department index
+                        "reports": reports_list,
+                        "count": len(reports_list),
+                    }
+                ),
+                HTTP_STATUS.OK,
+            )
+
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR

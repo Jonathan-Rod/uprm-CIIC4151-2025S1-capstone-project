@@ -1,5 +1,6 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, current_app, send_from_directory
 from flask_cors import CORS
+
 from handler.h_reports import ReportsHandler
 from handler.h_users import UsersHandler
 from handler.h_administrators import AdministratorsHandler
@@ -7,8 +8,34 @@ from handler.h_locations import LocationsHandler
 from handler.h_departments import DepartmentsHandler
 from handler.h_pinned_reports import PinnedReportsHandler
 
+from constants import HTTP_STATUS
+from dao.d_administrators import AdministratorsDAO
+
+import os
+import uuid
+from pathlib import Path
+from werkzeug.utils import secure_filename
+
+# Allowed image types
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+
+# -------------------------------------------------------
+# APP SETUP
+# -------------------------------------------------------
 app = Flask(__name__)
 CORS(app)
+
+# Upload folder setup
+BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_FOLDER = BASE_DIR / "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config["UPLOAD_FOLDER"] = str(UPLOAD_FOLDER)
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB limit
+
+def allowed_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 # -------------------------------------------------------
 # HEALTH
@@ -16,6 +43,48 @@ CORS(app)
 @app.route("/", methods=["GET"])
 def health_check():
     return {"status": "OK", "message": "Report System API is running"}
+
+
+# -------------------------------------------------------
+# IMAGE UPLOAD (NEW)
+# -------------------------------------------------------
+@app.route("/upload", methods=["POST"])
+def upload_image():
+    """
+    Accepts: multipart/form-data with field "image"
+    Saves the file into /uploads
+    Returns: { "url": "/uploads/<uuid>.jpg" }
+    """
+    if "image" not in request.files:
+        return jsonify({"error": "No image file part"}), 400
+
+    file = request.files["image"]
+
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Unsupported file type"}), 400
+
+    # secure original name and create unique file
+    original_name = secure_filename(file.filename)
+    ext = original_name.rsplit(".", 1)[1].lower()
+    unique_name = f"{uuid.uuid4().hex}.{ext}"
+
+    save_path = os.path.join(current_app.config["UPLOAD_FOLDER"], unique_name)
+    file.save(save_path)
+
+    # return URL accessible by frontend
+    public_url = f"/uploads/{unique_name}"
+
+    return jsonify({"url": public_url}), 201
+
+
+# Serve uploaded files
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+
 
 # -------------------------------------------------------
 # REPORTS
@@ -28,8 +97,10 @@ def handle_reports():
     elif request.method == "GET":
         page = request.args.get("page", default=1, type=int)
         limit = request.args.get("limit", default=10, type=int)
-        sort = request.args.get("sort")  # 'asc' or 'desc' (created_at)
-        return handler.get_all_reports(page, limit, sort)
+        sort = request.args.get("sort")
+        admin_id = request.args.get("admin_id", type=int)
+        return handler.get_all_reports(page, limit, sort, admin_id)
+
 
 @app.route("/reports/<int:report_id>", methods=["GET", "PUT", "DELETE"])
 def handle_report(report_id):
@@ -41,20 +112,24 @@ def handle_report(report_id):
     elif request.method == "DELETE":
         return handler.delete_report(report_id)
 
+
 @app.route("/reports/<int:report_id>/validate", methods=["POST"])
 def validate_report(report_id):
     handler = ReportsHandler()
     return handler.validate_report(report_id, request.json)
+
 
 @app.route("/reports/<int:report_id>/resolve", methods=["POST"])
 def resolve_report(report_id):
     handler = ReportsHandler()
     return handler.resolve_report(report_id, request.json)
 
+
 @app.route("/reports/<int:report_id>/rate", methods=["POST"])
 def rate_report(report_id):
     handler = ReportsHandler()
     return handler.rate_report(report_id, request.json)
+
 
 # -------------------------------------------------------
 # USERS
@@ -69,6 +144,7 @@ def handle_users():
         limit = request.args.get("limit", default=10, type=int)
         return handler.get_all_users(page, limit)
 
+
 @app.route("/users/<int:user_id>", methods=["GET", "PUT", "DELETE"])
 def handle_user(user_id):
     handler = UsersHandler()
@@ -79,6 +155,7 @@ def handle_user(user_id):
     elif request.method == "DELETE":
         return handler.delete_user(user_id)
 
+
 # -------------------------------------------------------
 # AUTH
 # -------------------------------------------------------
@@ -87,10 +164,12 @@ def login():
     handler = UsersHandler()
     return handler.login(request.json)
 
+
 @app.route("/logout", methods=["POST"])
 def logout():
     handler = UsersHandler()
     return handler.logout()
+
 
 # -------------------------------------------------------
 # LOCATIONS
@@ -105,6 +184,7 @@ def handle_locations():
         limit = request.args.get("limit", default=10, type=int)
         return handler.get_all_locations(page, limit)
 
+
 @app.route("/locations/<int:location_id>", methods=["GET", "PUT", "DELETE"])
 def handle_location(location_id):
     handler = LocationsHandler()
@@ -115,10 +195,12 @@ def handle_location(location_id):
     elif request.method == "DELETE":
         return handler.delete_location(location_id)
 
+
 @app.route("/locations/nearby", methods=["GET"])
 def get_locations_nearby():
     handler = LocationsHandler()
     return handler.get_locations_nearby()
+
 
 @app.route("/locations/with-reports", methods=["GET"])
 def get_locations_with_reports():
@@ -127,15 +209,18 @@ def get_locations_with_reports():
     limit = request.args.get("limit", default=10, type=int)
     return handler.get_locations_with_reports(page, limit)
 
+
 @app.route("/locations/stats", methods=["GET"])
 def get_location_stats():
     handler = LocationsHandler()
     return handler.get_location_stats()
 
+
 @app.route("/locations/search", methods=["GET"])
 def search_locations():
     handler = LocationsHandler()
     return handler.search_locations()
+
 
 # -------------------------------------------------------
 # ADMINISTRATORS
@@ -150,6 +235,7 @@ def handle_administrators():
         limit = request.args.get("limit", default=10, type=int)
         return handler.get_all_administrators(page, limit)
 
+
 @app.route("/administrators/<int:admin_id>", methods=["GET", "PUT", "DELETE"])
 def handle_administrator(admin_id):
     handler = AdministratorsHandler()
@@ -160,89 +246,72 @@ def handle_administrator(admin_id):
     elif request.method == "DELETE":
         return handler.delete_administrator(admin_id)
 
+
 @app.route("/administrators/department/<string:department>", methods=["GET"])
 def get_administrators_by_department(department):
     handler = AdministratorsHandler()
     return handler.get_administrators_by_department(department)
+
 
 @app.route("/administrators/<int:admin_id>/details", methods=["GET"])
 def get_administrator_with_details(admin_id):
     handler = AdministratorsHandler()
     return handler.get_administrator_with_details(admin_id)
 
+
 @app.route("/administrators/available", methods=["GET"])
 def get_available_administrators():
     handler = AdministratorsHandler()
     return handler.get_available_administrators()
+
 
 @app.route("/administrators/stats/all", methods=["GET"])
 def get_all_admin_stats():
     handler = AdministratorsHandler()
     return handler.get_all_admin_stats()
 
+
 @app.route("/administrators/check/<int:user_id>", methods=["GET"])
 def check_user_is_administrator(user_id):
     handler = AdministratorsHandler()
     return handler.check_user_is_administrator(user_id)
+
 
 @app.route("/administrators/performance", methods=["GET"])
 def get_administrator_performance_report():
     handler = AdministratorsHandler()
     return handler.get_administrator_performance_report()
 
-# -------------------------------------------------------
-# DEPARTMENTS
-# -------------------------------------------------------
-@app.route("/departments", methods=["GET", "POST"])
-def handle_departments():
-    handler = DepartmentsHandler()
-    if request.method == "POST":
-        return handler.create_department(request.json)
-    elif request.method == "GET":
-        return handler.get_all_departments()
 
-@app.route("/departments/<string:department_name>", methods=["GET", "PUT", "DELETE"])
-def handle_department(department_name):
-    handler = DepartmentsHandler()
-    if request.method == "GET":
-        return handler.get_department_by_name(department_name)
-    elif request.method == "PUT":
-        return handler.update_department(department_name, request.json)
-    elif request.method == "DELETE":
-        return handler.delete_department(department_name)
+# NEW: /me/admin
+@app.route("/me/admin", methods=["GET"])
+def get_current_user_admin_info():
+    user_id = request.args.get("user_id", type=int)
 
-@app.route("/departments/with-admin-info", methods=["GET"])
-def get_departments_with_admin_info():
-    handler = DepartmentsHandler()
-    return handler.get_departments_with_admin_info()
+    if user_id is None:
+        return {
+            "error_msg": "user_id query parameter is required",
+            "admin": False,
+            "department": None,
+        }, HTTP_STATUS.BAD_REQUEST
 
-@app.route("/departments/admin/<int:admin_id>", methods=["GET"])
-def get_departments_by_admin(admin_id):
-    handler = DepartmentsHandler()
-    return handler.get_departments_by_admin(admin_id)
+    dao = AdministratorsDAO()
+    admin_row = dao.get_administrator_by_id(user_id)
 
-@app.route("/departments/available", methods=["GET"])
-def get_available_departments():
-    handler = DepartmentsHandler()
-    return handler.get_available_departments()
+    if not admin_row:
+        return {
+            "user_id": user_id,
+            "admin": False,
+            "department": None,
+        }, HTTP_STATUS.OK
 
-@app.route("/departments/<string:department_name>/department-stats", methods=["GET"])
-def get_department_detailed_stats(department_name):
-    handler = DepartmentsHandler()
-    return handler.get_department_stats(department_name)
+    department = admin_row[1]
+    return {
+        "user_id": user_id,
+        "admin": True,
+        "department": department,
+    }, HTTP_STATUS.OK
 
-@app.route("/departments/stats/all", methods=["GET"])
-def get_all_departments_stats():
-    handler = DepartmentsHandler()
-    return handler.get_all_departments_stats()
-
-@app.route(
-    "/departments/check-assignment/<int:admin_id>/<string:department_name>",
-    methods=["GET"],
-)
-def check_admin_assignment(admin_id, department_name):
-    handler = DepartmentsHandler()
-    return handler.check_admin_assignment(admin_id, department_name)
 
 # -------------------------------------------------------
 # PINNED REPORTS
@@ -258,12 +327,14 @@ def handle_pinned_reports():
         limit = request.args.get("limit", default=10, type=int)
         return handler.get_pinned_reports(user_id, page, limit)
 
+
 @app.route("/pinned-reports/<int:report_id>", methods=["DELETE"])
 def handle_pinned_report(report_id):
     handler = PinnedReportsHandler()
     user_id = request.args.get("user_id", type=int)
     if request.method == "DELETE":
         return handler.unpin_report(user_id, report_id)
+
 
 @app.route("/users/<int:user_id>/pinned-reports", methods=["GET"])
 def handle_user_pinned_reports(user_id):
@@ -272,18 +343,21 @@ def handle_user_pinned_reports(user_id):
     limit = request.args.get("limit", default=10, type=int)
     return handler.get_user_pinned_reports(user_id, page, limit)
 
+
 @app.route("/pinned-reports/check/<int:user_id>/<int:report_id>", methods=["GET"])
 def check_pinned_status(user_id, report_id):
     handler = PinnedReportsHandler()
     return handler.check_pinned_status(user_id, report_id)
+
 
 @app.route("/pinned-reports/<int:user_id>/<int:report_id>/details", methods=["GET"])
 def get_pinned_report_detail(user_id, report_id):
     handler = PinnedReportsHandler()
     return handler.get_pinned_report_detail(user_id, report_id)
 
+
 # -------------------------------------------------------
-# SEARCH & FILTER (updated to accept category + sort)
+# SEARCH & FILTER
 # -------------------------------------------------------
 @app.route("/reports/search", methods=["GET"])
 def search_reports():
@@ -291,20 +365,24 @@ def search_reports():
     query = request.args.get("q", "")
     status = request.args.get("status")
     category = request.args.get("category")
-    sort = request.args.get("sort")  # 'asc' or 'desc'
+    sort = request.args.get("sort")
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
-    return handler.search_reports(query, page, limit, status, category, sort)
+    admin_id = request.args.get("admin_id", type=int)
+    return handler.search_reports(query, page, limit, status, category, sort, admin_id)
+
 
 @app.route("/reports/filter", methods=["GET"])
 def filter_reports():
     handler = ReportsHandler()
     status = request.args.get("status")
     category = request.args.get("category")
-    sort = request.args.get("sort")  # 'asc' or 'desc'
+    sort = request.args.get("sort")
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
-    return handler.filter_reports(status, category, page, limit, sort)
+    admin_id = request.args.get("admin_id", type=int)
+    return handler.filter_reports(status, category, page, limit, sort, admin_id)
+
 
 @app.route("/reports/user/<int:user_id>", methods=["GET"])
 def get_user_reports(user_id):
@@ -312,6 +390,7 @@ def get_user_reports(user_id):
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
     return handler.get_reports_by_user(user_id, page, limit)
+
 
 # -------------------------------------------------------
 # STATS & ADMIN
@@ -321,25 +400,30 @@ def get_overview_stats():
     handler = ReportsHandler()
     return handler.get_overview_stats()
 
+
 @app.route("/stats/department/<string:department>", methods=["GET"])
 def get_department_overview_stats(department):
     handler = ReportsHandler()
     return handler.get_department_stats(department)
+
 
 @app.route("/stats/user/<int:user_id>", methods=["GET"])
 def get_user_stats(user_id):
     handler = UsersHandler()
     return handler.get_user_stats(user_id)
 
+
 @app.route("/stats/admin/<int:admin_id>", methods=["GET"])
 def get_admin_stats(admin_id):
     handler = AdministratorsHandler()
     return handler.get_admin_stats(admin_id)
 
+
 @app.route("/admin/dashboard", methods=["GET"])
 def get_admin_dashboard():
     handler = ReportsHandler()
     return handler.get_admin_dashboard()
+
 
 @app.route("/admin/reports/pending", methods=["GET"])
 def get_pending_reports():
@@ -348,6 +432,7 @@ def get_pending_reports():
     limit = request.args.get("limit", default=10, type=int)
     return handler.get_pending_reports(page, limit)
 
+
 @app.route("/admin/reports/assigned", methods=["GET"])
 def get_assigned_reports():
     handler = ReportsHandler()
@@ -355,6 +440,7 @@ def get_assigned_reports():
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
     return handler.get_assigned_reports(admin_id, page, limit)
+
 
 # -------------------------------------------------------
 # SYSTEM HEALTH
@@ -369,10 +455,21 @@ def system_health():
         "version": "1.0.0",
     }
 
+
 @app.route("/users/<int:user_id>/upgrade-admin", methods=["POST"])
 def upgrade_admin(user_id):
     handler = UsersHandler()
     return handler.upgrade_to_admin(user_id, request.json)
 
+
+@app.route("/api/admin/<int:admin_id>/reports", methods=["GET"])
+def get_reports_for_admin(admin_id):
+    handler = AdministratorsHandler()
+    return handler.get_reports_for_admin(admin_id)
+
+
+# -------------------------------------------------------
+# RUN
+# -------------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

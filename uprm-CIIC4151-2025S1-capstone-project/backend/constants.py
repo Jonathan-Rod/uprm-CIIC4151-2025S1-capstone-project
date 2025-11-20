@@ -28,3 +28,29 @@ class HTTP_STATUS:
     BAD_GATEWAY = 502
     SERVICE_UNAVAILABLE = 503
     GATEWAY_TIMEOUT = 504
+
+
+CATEGORY_TO_DEPARTMENT = {
+    # LUMA
+    "street_light": "LUMA",
+    "traffic_signal": "LUMA",
+    "electrical_hazard": "LUMA",
+
+    # DTOP
+    "pothole": "DTOP",
+    "road_damage": "DTOP",
+    "fallen_tree": "DTOP",
+
+    # DDS
+    "sanitation": "DDS",
+    "sinkhole": "DDS",
+    "wandering_waste": "DDS",
+
+    # AAA
+    "flooding": "AAA",
+    "water_outage": "AAA",
+    "pipe_leak": "AAA",
+
+    # "other" can be None or some default; up to you
+    "none": None,
+}

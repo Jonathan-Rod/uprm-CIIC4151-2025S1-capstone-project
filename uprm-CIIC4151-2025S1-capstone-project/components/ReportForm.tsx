@@ -1,9 +1,9 @@
 import { ReportFormData, ReportCategory } from "@/types/interfaces";
 import React, { useState } from "react";
-import { StyleSheet, View, ScrollView, Alert } from "react-native";
+import { StyleSheet, View, ScrollView, Alert, Image } from "react-native";
 import { Button, Chip, TextInput, Text } from "react-native-paper";
 import { useAppColors } from "@/hooks/useAppColors";
-import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 
 export interface ReportFormRef {
   clearForm: () => void;
@@ -22,11 +22,10 @@ export default function ReportForm({
   onClear,
   loading = false,
 }: ReportFormProps) {
-  const router = useRouter();
   const { colors } = useAppColors();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ReportCategory>(ReportCategory.OTHER);
+  const [category, setCategory] = useState<ReportCategory>(ReportCategory.NONE);
   const [locationId, setLocationId] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [occurredOn, setOccurredOn] = useState<Date>(new Date());
@@ -37,14 +36,19 @@ export default function ReportForm({
     { label: "Traffic Signal", value: ReportCategory.TRAFFIC_SIGNAL },
     { label: "Road Damage", value: ReportCategory.ROAD_DAMAGE },
     { label: "Sanitation", value: ReportCategory.SANITATION },
-    { label: "Other", value: ReportCategory.OTHER },
+    { label: "Flooding", value: ReportCategory.FLOODING },
+    { label: "Water Outage", value: ReportCategory.WATER_OUTAGE },
+    { label: "Wandering Waste", value: ReportCategory.WANDERING_WASTE },
+    { label: "Electrical Hazard", value: ReportCategory.ELECTRICAL_HAZARD },
+    { label: "Sinkhole", value: ReportCategory.SINKHOLE },
+    { label: "Fallen Tree", value: ReportCategory.FALLEN_TREE },
+    { label: "Pipe Leak", value: ReportCategory.PIPE_LEAK },
   ];
 
-  // Clear form function
   const clearForm = () => {
     setTitle("");
     setDescription("");
-    setCategory(ReportCategory.OTHER);
+    setCategory(ReportCategory.NONE);
     setLocationId(null);
     setImageUrl("");
     setOccurredOn(new Date());
@@ -74,11 +78,8 @@ export default function ReportForm({
       occurred_on: occurredOn.toISOString(),
     };
 
-    // Call the onSubmit callback
+    // Let the parent decide navigation; just pass data up
     onSubmit(reportData);
-
-    // Navigate back after successful submission
-    router.back();
   };
 
   const handleClear = () => {
@@ -90,6 +91,28 @@ export default function ReportForm({
         onPress: clearForm,
       },
     ]);
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "We need access to your photo library to attach an image."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      setImageUrl(uri);
+    }
   };
 
   const styles = createStyles(colors);
@@ -163,19 +186,6 @@ export default function ReportForm({
           activeOutlineColor={colors.input.borderFocused}
         />
 
-        {/* TODO fix date picker for phone */}
-        {/* Occurred On Section */}
-        {/* <View style={styles.section}>
-          <Text variant="bodyMedium" style={styles.sectionLabel}>
-            Occurred On *
-          </Text>
-          <DateTimeSelector
-            value={occurredOn}
-            onChange={setOccurredOn}
-            disabled={loading}
-          />
-        </View> */}
-
         <TextInput
           label="Location ID (Optional)"
           value={locationId?.toString() || ""}
@@ -194,21 +204,54 @@ export default function ReportForm({
           activeOutlineColor={colors.input.borderFocused}
         />
 
-        <TextInput
-          label="Image URL (Optional)"
-          value={imageUrl}
-          onChangeText={setImageUrl}
-          mode="outlined"
-          disabled={loading}
-          style={styles.input}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="https://example.com/image.jpg"
-          textColor={colors.input.text}
-          placeholderTextColor={colors.input.placeholder}
-          outlineColor={colors.input.border}
-          activeOutlineColor={colors.input.borderFocused}
-        />
+        <View style={styles.section}>
+          <Text variant="bodyMedium" style={styles.sectionLabel}>
+            Image (Optional)
+          </Text>
+
+          <Button
+            mode="outlined"
+            onPress={handlePickImage}
+            disabled={loading}
+            icon="image"
+            style={styles.button}
+          >
+            Select Image from Gallery
+          </Button>
+
+          {imageUrl ? (
+            <View style={styles.imagePreviewContainer}>
+              <Image source={{ uri: imageUrl }} style={styles.imagePreview} />
+              <Text
+                variant="bodySmall"
+                style={styles.imageUriText}
+                numberOfLines={1}
+              >
+                {imageUrl}
+              </Text>
+            </View>
+          ) : (
+            <Text variant="bodySmall" style={styles.helperTextContent}>
+              No image selected.
+            </Text>
+          )}
+
+          <TextInput
+            label="Image URL (Optional)"
+            value={imageUrl}
+            onChangeText={setImageUrl}
+            mode="outlined"
+            disabled={loading}
+            style={styles.input}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="https://example.com/image.jpg or file:///..."
+            textColor={colors.input.text}
+            placeholderTextColor={colors.input.placeholder}
+            outlineColor={colors.input.border}
+            activeOutlineColor={colors.input.borderFocused}
+          />
+        </View>
 
         <View style={styles.buttonContainer}>
           {onCancel && (
@@ -252,9 +295,6 @@ export default function ReportForm({
           </Text>
           <Text variant="bodySmall" style={styles.helperTextContent}>
             Character limits: Title (100), Description (500)
-          </Text>
-          <Text variant="bodySmall" style={styles.helperTextContent}>
-            Select date and time from dropdowns
           </Text>
         </View>
       </View>
@@ -312,5 +352,20 @@ const createStyles = (colors: any) =>
     helperTextContent: {
       color: colors.textMuted,
       textAlign: "center",
+    },
+    imagePreviewContainer: {
+      marginTop: 8,
+      alignItems: "center",
+      gap: 4,
+    },
+    imagePreview: {
+      width: 160,
+      height: 160,
+      borderRadius: 8,
+    },
+    imageUriText: {
+      color: colors.textMuted,
+      fontSize: 10,
+      maxWidth: "100%",
     },
   });

@@ -69,9 +69,16 @@ CREATE TABLE reports (
             'traffic_signal',
             'road_damage',
             'sanitation',
-            'other'
+            'flooding',
+            'water_outage',
+            'wandering_waste',
+            'electrical_hazard',
+            'sinkhole',
+            'fallen_tree',
+            'pipe_leak',
+            'none'
         )
-    ) DEFAULT 'other',
+    ) DEFAULT 'none',
     created_by INTEGER REFERENCES users (id) NOT NULL,
     validated_by INTEGER REFERENCES administrators (id),
     resolved_by INTEGER REFERENCES administrators (id),

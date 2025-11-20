@@ -3,7 +3,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useRouter } from "expo-router";
 import { StyleSheet, Alert } from "react-native";
-import { createReport } from "@/utils/api";
+import { createReport, uploadImageFromUri } from "@/utils/api";
 import type { ReportFormData } from "@/types/interfaces";
 import { getStoredCredentials } from "@/utils/auth";
 import { useState, useRef } from "react";
@@ -19,7 +19,7 @@ export default function ReportFormModal() {
     try {
       setLoading(true);
 
-      console.log("Submitting report data:", data);
+      console.log("Submitting report data (raw):", data);
 
       const credentials = await getStoredCredentials();
       if (!credentials) {
@@ -33,15 +33,37 @@ export default function ReportFormModal() {
         return;
       }
 
-      const submissionData = {
+      // 🔹 Step 1: handle image upload if it's a local file:// URI
+      let finalImageUrl = data.image_url;
+
+      if (finalImageUrl && finalImageUrl.startsWith("file://")) {
+        try {
+          console.log("Uploading local image:", finalImageUrl);
+          finalImageUrl = await uploadImageFromUri(finalImageUrl);
+          console.log("Uploaded image URL from backend:", finalImageUrl);
+        } catch (err) {
+          console.error("Image upload failed:", err);
+          Alert.alert(
+            "Image Upload Error",
+            "Could not upload the image. You can try again or submit without an image."
+          );
+          // You can decide whether to return here or continue without image:
+          // return;
+          finalImageUrl = undefined;
+        }
+      }
+
+      // 🔹 Step 2: prepare final data for backend
+      const submissionData: ReportFormData = {
         ...data,
         occurred_on: data.occurred_on || new Date().toISOString(),
+        image_url: finalImageUrl || undefined,
       };
 
       console.log("Final submission data:", submissionData);
 
       await createReport(submissionData);
-      formRef.current?.clearForm();
+      formRef.current?.clearForm?.();
 
       Alert.alert("Success", "Report submitted successfully!", [
         {
@@ -77,7 +99,7 @@ export default function ReportFormModal() {
   };
 
   const handleClear = () => {
-    formRef.current?.clearForm();
+    formRef.current?.clearForm?.();
   };
 
   const styles = createStyles(colors);
@@ -92,6 +114,8 @@ export default function ReportFormModal() {
         onCancel={handleCancel}
         onClear={handleClear}
         loading={loading}
+        // Note: ReportFormRef is not wired via forwardRef yet;
+        // if you want this to work, we can add forwardRef later.
       />
     </ThemedView>
   );

@@ -1,9 +1,63 @@
 from flask import jsonify
 from dao.d_reports import ReportsDAO
+from dao.d_administrators import AdministratorsDAO  # 👈 NEW
 from constants import HTTP_STATUS
 
 
 class ReportsHandler:
+    # -----------------------------------
+    # Helpers for admin-based restrictions
+    # -----------------------------------
+    @staticmethod
+    def _department_allowed_categories(department: str | None):
+        """
+        Map a department name to the categories it is allowed to see.
+        Return None or [] to indicate 'no restriction'.
+        """
+        if not department:
+            return None
+
+        dept = department.strip().upper()
+
+        if dept == "LUMA":
+            return ["street_light", "traffic_signal", "electrical_hazard"]
+        if dept == "DTOP":
+            return ["pothole", "road_damage", "fallen_tree"]
+        if dept == "AAA":
+            return ["flooding", "water_outage", "pipe_leak"]
+        if dept == "DDS":
+            return ["sanitation", "wandering_waste", "sinkhole"]
+
+        # Unknown department → no restriction
+        return None
+
+    def _get_allowed_categories_for_admin(self, admin_id: int | None):
+        """
+        Given an admin_id (which is the same as user_id in your schema),
+        fetch the administrator row and derive which categories they are
+        allowed to see.
+
+        If admin_id is None or the user is not an administrator,
+        this returns None (no restriction).
+        """
+        if not admin_id:
+            return None
+
+        admin_dao = AdministratorsDAO()
+        info = admin_dao.get_admin_info_for_user(admin_id)
+
+        if not info or not info.get("admin"):
+            # Not an administrator → no restriction
+            return None
+
+        # Your existing code assumes:
+        # 0: id, 1: user_id, 2: department, 3+: user fields...
+        department = info.get("department")
+        return self._department_allowed_categories(department)
+
+    # -----------------------------------
+    # Existing mapping logic
+    # -----------------------------------
     def map_to_dict(self, report):
         return {
             "id": report[0],
@@ -21,12 +75,25 @@ class ReportsHandler:
             "rating": report[12],
         }
 
-    def get_all_reports(self, page=1, limit=10, sort=None):
+    # -----------------------------------
+    # GET /reports  (with optional admin_id)
+    # -----------------------------------
+    def get_all_reports(self, page=1, limit=10, sort=None, admin_id=None):
         try:
             offset = (page - 1) * limit
             dao = ReportsDAO()
-            reports = dao.get_reports_paginated(limit, offset, sort=sort)
-            total_count = dao.get_total_report_count()
+
+            allowed_categories = self._get_allowed_categories_for_admin(admin_id)
+
+            reports = dao.get_reports_paginated(
+                limit,
+                offset,
+                sort=sort,
+                allowed_categories=allowed_categories,
+            )
+            total_count = dao.get_total_report_count(
+                allowed_categories=allowed_categories
+            )
             total_pages = (total_count + limit - 1) // limit
             reports_dict_list = [self.map_to_dict(report) for report in reports]
             return (
@@ -57,7 +124,7 @@ class ReportsHandler:
         try:
             title = data.get("title")
             description = data.get("description")
-            category = data.get("category", "other")
+            category = data.get("category", "none")
             location_id = data.get("location_id")
             image_url = data.get("image_url")
             created_by = data.get("user_id")
@@ -79,7 +146,14 @@ class ReportsHandler:
                 "traffic_signal",
                 "road_damage",
                 "sanitation",
-                "other",
+                "sinkhole",
+                "electrical_hazard",
+                "wandering_waste",
+                "flooding",
+                "pipe_leak",
+                "fallen_tree",
+                "water_outage",
+                "none",
             ]
             if category not in valid_categories:
                 return (
@@ -139,7 +213,14 @@ class ReportsHandler:
                 "traffic_signal",
                 "road_damage",
                 "sanitation",
-                "other",
+                "sinkhole",
+                "electrical_hazard",
+                "wandering_waste",
+                "water_outage",
+                "flooding",
+                "pipe_leak",
+                "fallen_tree",
+                "none",
             ]:
                 return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
             if rating and (rating < 1 or rating > 5):
@@ -186,12 +267,23 @@ class ReportsHandler:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
     # ---------- UNIFIED ENTRY POINT ----------
-    def search_reports(self, query=None, page=1, limit=10, status=None, category=None, sort=None):
+    # /reports/search?q=&status=&category=&sort=&admin_id=
+    def search_reports(
+        self,
+        query=None,
+        page=1,
+        limit=10,
+        status=None,
+        category=None,
+        sort=None,
+        admin_id=None,  # 👈 NEW
+    ):
         """
         Handles:
         - search only      (/reports/search?q=...)
         - filter only      (/reports/search?status=... [&category=...] [&sort=asc|desc])
         - search + filter  (/reports/search?q=...&status=... [&category=...] [&sort=...])
+        - AND applies backend admin category restriction if admin_id is provided.
         """
         try:
             q = (query or "").strip()
@@ -214,12 +306,22 @@ class ReportsHandler:
                 "traffic_signal",
                 "road_damage",
                 "sanitation",
-                "other",
+                "flooding",
+                "water_outage",
+                "wandering_waste",
+                "electrical_hazard",
+                "sinkhole",
+                "fallen_tree",
+                "pipe_leak",
+                "none",
             ]:
                 return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
 
             offset = (page - 1) * limit
             dao = ReportsDAO()
+
+            # 🔹 Admin-based restriction
+            allowed_categories = self._get_allowed_categories_for_admin(admin_id)
 
             rows, total_count = dao.search_reports(
                 q=q if q else None,
@@ -228,6 +330,7 @@ class ReportsHandler:
                 limit=limit,
                 offset=offset,
                 sort=order if order in ("asc", "desc") else None,
+                allowed_categories=allowed_categories,  # 👈 pass restriction
             )
 
             total_pages = (total_count + limit - 1) // limit
@@ -250,12 +353,17 @@ class ReportsHandler:
             )
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
-    # ----------------------------------------
 
-    # Backward-compat: keep /reports/filter but delegate (now supports sort).
-    def filter_reports(self, status, category, page=1, limit=10, sort=None):
+    # Backward-compat: /reports/filter → delegates to search_reports (now with admin)
+    def filter_reports(self, status, category, page=1, limit=10, sort=None, admin_id=None):
         return self.search_reports(
-            query=None, page=page, limit=limit, status=status, category=category, sort=sort
+            query=None,
+            page=page,
+            limit=limit,
+            status=status,
+            category=category,
+            sort=sort,
+            admin_id=admin_id,
         )
 
     def get_reports_by_user(self, user_id, page=1, limit=10):

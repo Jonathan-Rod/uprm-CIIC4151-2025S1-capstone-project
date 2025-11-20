@@ -1,8 +1,15 @@
+// app/(tabs)/explore.tsx
 import FABCreateReport from "@/components/FABCreateReport";
+import { getStoredCredentials } from "@/utils/auth";
 import ReportCard from "@/components/ReportCard";
 import { useAppColors } from "@/hooks/useAppColors";
 import type { ReportCategory, ReportData } from "@/types/interfaces";
-import { filterReports, getReports, searchReports } from "@/utils/api";
+import {
+  filterReports,
+  getReports,
+  searchReports,
+  checkUserIsAdministrator,
+} from "@/utils/api";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
@@ -10,11 +17,16 @@ import {
   ActivityIndicator,
   Button,
   IconButton,
-  Menu,
   Searchbar,
   Text,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import FilterSheetModal, {
+  StatusFilter,
+  CategoryFilter,
+  SortOrder,
+} from "../(modals)/filter-sheet";
 
 /** API response shape used by /reports, /reports/search, /reports/filter */
 type ReportsResponse = {
@@ -22,16 +34,25 @@ type ReportsResponse = {
   totalPages?: number;
 };
 
-type StatusFilter = "" | "open" | "in_progress" | "resolved" | "denied";
-type CategoryFilter =
-  | ""
-  | "pothole"
-  | "street_light"
-  | "traffic_signal"
-  | "road_damage"
-  | "sanitation"
-  | "other";
-type SortOrder = "asc" | "desc";
+// ------------------------------------------------------------------
+// Department → allowed categories (hardcoded business rules)
+// ------------------------------------------------------------------
+const getDepartmentAllowedCategories = (
+  department: string
+): CategoryFilter[] => {
+  switch (department) {
+    case "LUMA":
+      return ["street_light", "traffic_signal", "electrical_hazard"];
+    case "DTOP":
+      return ["pothole", "road_damage", "fallen_tree"];
+    case "AAA":
+      return ["flooding", "water_outage", "pipe_leak"];
+    case "DDS":
+      return ["sanitation", "wandering_waste", "sinkhole"];
+    default:
+      return [];
+  }
+};
 
 export default function ReportScreen() {
   const router = useRouter();
@@ -51,21 +72,37 @@ export default function ReportScreen() {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  // filter & sort
+  // filters & sort
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc"); // newest first
 
-  // menus
-  const [statusMenuVisible, setStatusMenuVisible] = useState(false);
-  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
-  const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  // admin info
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminDepartment, setAdminDepartment] = useState<string | null>(null);
+
+  // filter sheet visibility
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
 
   // debounce
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const limit = 10;
 
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  // ------------------------------------------------------------------
+  // Helpers
+  // ------------------------------------------------------------------
+  const applyAdminDepartmentFilter = (list: ReportData[]): ReportData[] => {
+    if (!isAdmin || !adminDepartment) return list;
+
+    const allowed = getDepartmentAllowedCategories(adminDepartment);
+    if (!allowed.length) return list; // no mapping → show all
+
+    return list.filter((r) =>
+      allowed.includes(r.category as CategoryFilter)
+    );
+  };
 
   // -------------------------
   // Fetch helpers
@@ -94,17 +131,23 @@ export default function ReportScreen() {
           sortOrder
         )) as ReportsResponse;
 
-        setReports(resp.reports || []);
+        const serverReports = resp.reports || [];
+        const filteredReports = applyAdminDepartmentFilter(serverReports);
+
+        setReports(filteredReports);
         setCurrentPage(1);
         setTotalPages(resp.totalPages || 1);
       } else {
         // ALL (paginated, server-side sort)
         resp = (await getReports(page, limit, sortOrder)) as ReportsResponse;
 
+        const serverReports = resp.reports || [];
+        const filteredReports = applyAdminDepartmentFilter(serverReports);
+
         if (isRefresh) {
-          setReports(resp.reports || []);
+          setReports(filteredReports);
         } else {
-          setReports((prev) => [...prev, ...(resp.reports || [])]);
+          setReports((prev) => [...prev, ...filteredReports]);
         }
         setCurrentPage(page);
         setTotalPages(resp.totalPages || 1);
@@ -143,7 +186,10 @@ export default function ReportScreen() {
         sortOrder
       )) as ReportsResponse;
 
-      setReports(resp.reports || []);
+      const serverReports = resp.reports || [];
+      const filteredReports = applyAdminDepartmentFilter(serverReports);
+
+      setReports(filteredReports);
       setCurrentPage(1);
       setTotalPages(resp.totalPages || 1);
     } catch (err: any) {
@@ -157,13 +203,42 @@ export default function ReportScreen() {
   // -------------------------
   // Effects
   // -------------------------
+
+  // 1) initial load: fetch admin info first, then load reports
   useEffect(() => {
-    // initial load
-    loadExploreReports(1, true);
+    const init = async () => {
+      try {
+        const creds = await getStoredCredentials();
+        if (creds) {
+          const res = await checkUserIsAdministrator(creds.userId);
+          console.log("Admin info from /me/admin:", res);
+
+          if (res.admin) {
+            setIsAdmin(true);
+            setAdminDepartment(res.department || null);
+          } else {
+            setIsAdmin(false);
+            setAdminDepartment(null);
+          }
+        } else {
+          setIsAdmin(false);
+          setAdminDepartment(null);
+        }
+      } catch (err) {
+        console.error("Failed to load admin info:", err);
+        setIsAdmin(false);
+        setAdminDepartment(null);
+      } finally {
+        // ✅ Now that admin state is set (or failed), load reports
+        await loadExploreReports(1, true);
+      }
+    };
+
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // when status/category/sort changes:
+  // 2) when status/category/sort changes:
   // if there is an active search term, re-run search; else load filtered/sorted feed
   useEffect(() => {
     if (query.trim()) {
@@ -174,7 +249,7 @@ export default function ReportScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, categoryFilter, sortOrder]);
 
-  // debounce query changes
+  // 3) debounce query changes
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -185,6 +260,12 @@ export default function ReportScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  // 4) re-apply admin filter when admin info changes
+  useEffect(() => {
+    setReports((prev) => applyAdminDepartmentFilter(prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, adminDepartment]);
 
   // -------------------------
   // UI handlers
@@ -216,22 +297,6 @@ export default function ReportScreen() {
     router.push("/(modals)/report-form");
   };
 
-  const onSelectStatus = (value: StatusFilter) => {
-    setStatusMenuVisible(false);
-    setStatusFilter(value);
-    // Do NOT clear the search bar — effects will re-run appropriately.
-  };
-
-  const onSelectCategory = (value: CategoryFilter) => {
-    setCategoryMenuVisible(false);
-    setCategoryFilter(value);
-  };
-
-  const onSelectSort = (value: SortOrder) => {
-    setSortMenuVisible(false);
-    setSortOrder(value);
-  };
-
   const renderReportItem = ({ item }: { item: ReportData }) => (
     <ReportCard
       report={{ ...item, category: item.category as ReportCategory }}
@@ -240,7 +305,9 @@ export default function ReportScreen() {
   );
 
   const renderFooter = () => {
-    if (isSearching || statusFilter || categoryFilter || !isLoadingMore) return null;
+    if (isSearching || statusFilter || categoryFilter || !isLoadingMore) {
+      return null;
+    }
     return (
       <ActivityIndicator
         style={{ paddingVertical: 16 }}
@@ -298,7 +365,7 @@ export default function ReportScreen() {
         Explore
       </Text>
 
-      {/* Search + Filter row */}
+      {/* Search + Filter button row */}
       <View style={styles.row}>
         <View style={styles.searchFlex}>
           <Searchbar
@@ -312,106 +379,12 @@ export default function ReportScreen() {
           />
         </View>
 
-        {/* Status menu */}
-        <Menu
-          visible={statusMenuVisible}
-          onDismiss={() => setStatusMenuVisible(false)}
-          anchor={
-            <IconButton
-              icon="filter-variant"
-              onPress={() => setStatusMenuVisible(true)}
-              accessibilityLabel="Filter by status"
-              style={styles.filterBtn}
-            />
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          <Menu.Item
-            onPress={() => onSelectStatus("")}
-            title="All statuses"
-            leadingIcon={statusFilter === "" ? "check" : undefined}
-          />
-          <Menu.Item
-            onPress={() => onSelectStatus("open")}
-            title="Open"
-            leadingIcon={statusFilter === "open" ? "check" : undefined}
-          />
-          <Menu.Item
-            onPress={() => onSelectStatus("in_progress")}
-            title="In Progress"
-            leadingIcon={statusFilter === "in_progress" ? "check" : undefined}
-          />
-          <Menu.Item
-            onPress={() => onSelectStatus("resolved")}
-            title="Resolved"
-            leadingIcon={statusFilter === "resolved" ? "check" : undefined}
-          />
-          <Menu.Item
-            onPress={() => onSelectStatus("denied")}
-            title="Denied"
-            leadingIcon={statusFilter === "denied" ? "check" : undefined}
-          />
-        </Menu>
-
-        {/* Category menu */}
-        <Menu
-          visible={categoryMenuVisible}
-          onDismiss={() => setCategoryMenuVisible(false)}
-          anchor={
-            <IconButton
-              icon="shape"
-              onPress={() => setCategoryMenuVisible(true)}
-              accessibilityLabel="Filter by category"
-              style={styles.filterBtn}
-            />
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          {(
-            [
-              ["", "All categories"],
-              ["pothole", "Pothole"],
-              ["street_light", "Street light"],
-              ["traffic_signal", "Traffic signal"],
-              ["road_damage", "Road damage"],
-              ["sanitation", "Sanitation"],
-              ["other", "Other"],
-            ] as [CategoryFilter, string][]
-          ).map(([value, label]) => (
-            <Menu.Item
-              key={value || "all"}
-              onPress={() => onSelectCategory(value)}
-              title={label}
-              leadingIcon={categoryFilter === value ? "check" : undefined}
-            />
-          ))}
-        </Menu>
-
-        {/* Sort menu (created_at asc/desc) */}
-        <Menu
-          visible={sortMenuVisible}
-          onDismiss={() => setSortMenuVisible(false)}
-          anchor={
-            <IconButton
-              icon={sortOrder === "desc" ? "sort-clock-descending" : "sort-clock-ascending"}
-              onPress={() => setSortMenuVisible(true)}
-              accessibilityLabel="Sort by date"
-              style={styles.filterBtn}
-            />
-          }
-          contentStyle={{ backgroundColor: colors.surface }}
-        >
-          <Menu.Item
-            onPress={() => onSelectSort("desc")}
-            title="Newest first"
-            leadingIcon={sortOrder === "desc" ? "check" : undefined}
-          />
-          <Menu.Item
-            onPress={() => onSelectSort("asc")}
-            title="Oldest first"
-            leadingIcon={sortOrder === "asc" ? "check" : undefined}
-          />
-        </Menu>
+        <IconButton
+          icon="filter-variant"
+          onPress={() => setFilterSheetVisible(true)}
+          accessibilityLabel="Open filters"
+          style={styles.filterBtn}
+        />
       </View>
 
       {/* Results */}
@@ -436,6 +409,28 @@ export default function ReportScreen() {
       />
 
       <FABCreateReport onPress={handleCreateReport} />
+
+      {/* Filter sheet modal */}
+      <FilterSheetModal
+        visible={filterSheetVisible}
+        onDismiss={() => setFilterSheetVisible(false)}
+        status={statusFilter}
+        category={categoryFilter}
+        sortOrder={sortOrder}
+        onApply={({
+          status,
+          category,
+          sortOrder: nextSort,
+        }: {
+          status: StatusFilter;
+          category: CategoryFilter;
+          sortOrder: SortOrder;
+        }) => {
+          setStatusFilter(status);
+          setCategoryFilter(category);
+          setSortOrder(nextSort);
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -21,37 +21,90 @@ class ReportsDAO:
     # -------------------------------
     # Core list/read/write operations
     # -------------------------------
-    def get_reports_paginated(self, limit, offset, sort: str | None = None):
+    def get_reports_paginated(
+        self,
+        limit: int,
+        offset: int,
+        sort: str | None = None,
+        allowed_categories: list[str] | None = None,
+    ):
+        """
+        Fetch reports with pagination and optional category restriction.
+
+        allowed_categories:
+          - None  → no category restriction
+          - list  → WHERE category = ANY(%s)
+        """
         order_dir = _normalize_sort(sort)
+
+        where_clauses: list[str] = []
+        params: list = []
+
+        if allowed_categories:
+            where_clauses.append("category = ANY(%s)")
+            params.append(allowed_categories)
+
+        where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
         query = f"""
             SELECT id, title, description, status, category, created_by,
                    validated_by, resolved_by, created_at, resolved_at,
                    location, image_url, rating
             FROM reports
+            {where_sql}
             ORDER BY created_at {order_dir}, id {order_dir}
             LIMIT %s OFFSET %s
         """
+        params.extend([limit, offset])
+
         with self.conn.cursor() as cur:
-            cur.execute(query, (limit, offset))
+            cur.execute(query, params)
             return cur.fetchall()
 
-    def get_total_report_count(self):
-        query = "SELECT COUNT(*) FROM reports"
+    def get_total_report_count(self, allowed_categories: list[str] | None = None):
+        """
+        Count reports, optionally restricted to a set of categories.
+        Used for pagination totalPages.
+        """
+        where_clauses: list[str] = []
+        params: list = []
+
+        if allowed_categories:
+            where_clauses.append("category = ANY(%s)")
+            params.append(allowed_categories)
+
+        where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        query = f"SELECT COUNT(*) FROM reports{where_sql}"
+
         with self.conn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query, params)
             return cur.fetchone()[0]
 
-    def get_all_reports(self, sort: str | None = None):
+    def get_all_reports(self, sort: str | None = None, allowed_categories: list[str] | None = None):
+        """
+        Fetch all reports (no pagination) with optional category restriction.
+        """
         order_dir = _normalize_sort(sort)
+
+        where_clauses: list[str] = []
+        params: list = []
+
+        if allowed_categories:
+            where_clauses.append("category = ANY(%s)")
+            params.append(allowed_categories)
+
+        where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
         query = f"""
             SELECT id, title, description, status, category, created_by,
                    validated_by, resolved_by, created_at, resolved_at,
                    location, image_url, rating
             FROM reports
+            {where_sql}
             ORDER BY created_at {order_dir}, id {order_dir}
         """
         with self.conn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query, params)
             return cur.fetchall()
 
     def get_report_by_id(self, report_id):
@@ -70,7 +123,7 @@ class ReportsDAO:
         self,
         title,
         description,
-        category="other",
+        category="none",
         location_id=None,
         image_url=None,
         created_by=None,
@@ -189,18 +242,23 @@ class ReportsDAO:
         category: str | None = None,
         limit: int = 10,
         offset: int = 0,
-        sort: str | None = None,  # 'asc' | 'desc' on created_at
+        sort: str | None = None,          # 'asc' | 'desc' on created_at
+        allowed_categories: list[str] | None = None,  # 🔹 NEW
     ):
         """
         Unified search + filter with pagination and date ordering.
+
         - q: substring search on title/description (ILIKE)
         - status: 'open' | 'in_progress' | 'resolved' | 'denied' | 'closed' | None
-        - category: 'pothole' | 'street_light' | 'traffic_signal' | 'road_damage' | 'sanitation' | 'other' | None
+        - category: single category filter (user-selected)
+        - allowed_categories: backend-enforced subset, e.g. for admin department.
+          If present, it is AND-ed with the explicit category filter.
         - sort: 'asc' or 'desc' applied to created_at (then id)
+
         Returns: (rows, total_count)
         """
         where = []
-        params = []
+        params: list = []
 
         if q:
             where.append("(title ILIKE %s OR description ILIKE %s)")
@@ -214,6 +272,11 @@ class ReportsDAO:
         if category:
             where.append("category = %s")
             params.append(category)
+
+        if allowed_categories:
+            # Enforce that results belong to one of the allowed categories
+            where.append("category = ANY(%s)")
+            params.append(allowed_categories)
 
         where_sql = f" WHERE {' AND '.join(where)}" if where else ""
         order_dir = _normalize_sort(sort)
@@ -241,7 +304,13 @@ class ReportsDAO:
     # -------------------------------
     # Misc existing helpers
     # -------------------------------
-    def get_reports_by_user(self, user_id, limit, offset, sort: str | None = None):
+    def get_reports_by_user(
+        self,
+        user_id: int,
+        limit: int,
+        offset: int,
+        sort: str | None = None,
+    ):
         order_dir = _normalize_sort(sort)
         query = f"""
             SELECT id, title, description, status, category, created_by,

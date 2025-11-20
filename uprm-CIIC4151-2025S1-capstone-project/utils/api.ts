@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import type { ReportFormData } from "@/types/interfaces";
 import { getStoredCredentials } from "@/utils/auth";
+import type { AdminInfo } from "@/types/interfaces";
 
 // =============================================================================
 // BASE URL (per platform)
@@ -9,16 +10,16 @@ const getApiBaseUrl = () => {
   if (__DEV__) {
     console.log("Platform:", Platform.OS);
 
-    // Android emulator -> host localhost
+    // Android emulator -> host machine
     if (Platform.OS === "android") {
       const androidUrl = "http://10.0.2.2:5000";
       console.log("Using Android URL:", androidUrl);
       return androidUrl;
     }
 
-    // iOS simulator (adjust to your LAN IP)
+    // iOS (Expo Go on physical device)
     if (Platform.OS === "ios") {
-      const iosUrl = "http://192.168.4.49:5000";
+      const iosUrl = "http://192.168.4.22:5000"; 
       console.log("Using iOS URL:", iosUrl);
       return iosUrl;
     }
@@ -34,6 +35,77 @@ const getApiBaseUrl = () => {
 };
 
 export const API_BASE_URL = getApiBaseUrl();
+
+// =============================================================================
+// IMAGE UPLOAD (NEW)
+// =============================================================================
+
+/**
+ * Upload a local file:/// URI from expo-image-picker to Flask /upload.
+ * Returns a relative URL like "/uploads/<uuid>.jpg".
+ */
+export async function uploadImageFromUri(uri: string): Promise<string> {
+  const formData = new FormData();
+
+  const filename = uri.split("/").pop() || "image.jpg";
+  const extMatch = /\.(\w+)$/.exec(filename);
+  const ext = extMatch?.[1]?.toLowerCase();
+
+  const mimeType =
+    ext === "png"
+      ? "image/png"
+      : ext === "webp"
+      ? "image/webp"
+      : "image/jpeg";
+
+  formData.append("image", {
+    uri,
+    name: filename,
+    type: mimeType,
+  } as any);
+
+  const uploadUrl = `${API_BASE_URL}/upload`;
+
+  try {
+    console.log("Uploading image:", uri);
+
+    const response = await fetch(uploadUrl, {
+      method: "POST",
+      body: formData,
+      // ⚠️ DO NOT set Content-Type manually.
+    });
+
+    console.log("Upload status:", response.status);
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Upload failed:", text);
+      throw new Error(`Upload failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Upload JSON:", data);
+
+    if (!data.url) {
+      throw new Error("Upload returned no URL");
+    }
+
+    return data.url; // e.g. "/uploads/<uuid>.jpg"
+  } catch (err) {
+    console.error("uploadImageFromUri error:", err);
+    throw err;
+  }
+}
+
+/**
+ * Convert backend relative paths into full URLs.
+ * Useful for <Image source={{ uri: buildImageUrl(report.image_url) }} />
+ */
+export function buildImageUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${API_BASE_URL}${path}`;
+}
 
 // =============================================================================
 // REQUEST WRAPPER
@@ -52,29 +124,32 @@ async function request(endpoint: string, method = "GET", body?: any) {
 
   try {
     console.log(`API Request: ${method} ${url}`);
-    if (body) console.log("Request data:", body);
+    if (body) console.log("Request Body:", body);
 
     const response = await fetch(url, options);
-    console.log(`Response Status: ${response.status}`);
+    console.log("Response Status:", response.status);
 
     if (!response.ok) {
-      if (response.status === 401) throw new Error("Authentication failed - Please log in again");
+      if (response.status === 401)
+        throw new Error("Authentication failed - Please log in again");
       if (response.status === 403) throw new Error("Access forbidden");
       if (response.status === 404) throw new Error("Resource not found");
       if (response.status >= 500) throw new Error("Server error");
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
+      throw new Error(`API error: ${response.status}`);
     }
 
     if (response.status === 204) return null;
 
-    const data = await response.json();
-    console.log("API Response Data:", data);
-    return data;
+    const json = await response.json();
+    console.log("API Response:", json);
+    return json;
   } catch (error: any) {
-    console.error(`API Error for ${method} ${endpoint}:`, error);
+    console.error(`API Error (${method} ${endpoint}):`, error);
 
     if (error instanceof TypeError && error.message === "Failed to fetch") {
-      throw new Error(`Cannot connect to server at ${url}. Please check if the backend is running.`);
+      throw new Error(
+        `Cannot connect to backend at ${API_BASE_URL}. Make sure Flask is running.`
+      );
     }
 
     throw error;
@@ -82,7 +157,7 @@ async function request(endpoint: string, method = "GET", body?: any) {
 }
 
 // =============================================================================
-// AUTHENTICATION
+// AUTH
 // =============================================================================
 export async function login(data: { email: string; password: string }) {
   const result = await request("/login", "POST", data);
@@ -95,7 +170,7 @@ export async function logout() {
 }
 
 export async function getSystemHealth() {
-  return request("/system/health", "GET");
+  return request("/system/health");
 }
 
 // =============================================================================
@@ -105,15 +180,19 @@ export async function getUsers(page?: number, limit?: number) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
-  const query = params.toString();
-  return request(`/users${query ? `?${query}` : ""}`);
+
+  return request(`/users?${params.toString()}`);
 }
 
 export async function getUser(id: number) {
   return request(`/users/${id}`);
 }
 
-export async function createUser(data: { email: string; password: string; admin: boolean }) {
+export async function createUser(data: {
+  email: string;
+  password: string;
+  admin: boolean;
+}) {
   const result = await request("/users", "POST", data);
   if (result && result.id) return result;
   throw new Error(result?.error_msg || "User creation failed");
@@ -128,24 +207,8 @@ export async function deleteUser(id: number) {
 }
 
 // =============================================================================
-// USER MANAGEMENT
+// USER MGMT
 // =============================================================================
-export async function suspendUser(id: number) {
-  return request(`/users/${id}/suspend`, "POST");
-}
-
-export async function unsuspendUser(id: number) {
-  return request(`/users/${id}/unsuspend`, "POST");
-}
-
-export async function pinUser(id: number) {
-  return request(`/users/${id}/pin`, "POST");
-}
-
-export async function unpinUser(id: number) {
-  return request(`/users/${id}/unpin`, "POST");
-}
-
 export async function upgradeToAdmin(userId: number, code: string) {
   return request(`/users/${userId}/upgrade-admin`, "POST", { code });
 }
@@ -161,27 +224,28 @@ export async function getReports(
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
-  if (sort) params.append("sort", sort); // ✅ NEW
+  if (sort) params.append("sort", sort);
 
-  const query = params.toString();
-  return request(`/reports${query ? `?${query}` : ""}`);
+  const creds = await getStoredCredentials();
+  if (creds) params.append("admin_id", creds.userId.toString());
+
+  return request(`/reports?${params.toString()}`);
 }
-
 
 export async function getReport(id: number) {
   return request(`/reports/${id}`);
 }
 
 export async function createReport(data: ReportFormData) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("User not authenticated");
 
-  const reportData = {
+  const payload = {
     ...data,
-    user_id: credentials.userId, // created_by on server
+    user_id: creds.userId,
   };
 
-  return request("/reports", "POST", reportData);
+  return request("/reports", "POST", payload);
 }
 
 export async function updateReport(id: number, data: any) {
@@ -195,20 +259,29 @@ export async function deleteReport(id: number) {
 // =============================================================================
 // REPORT ACTIONS
 // =============================================================================
-export async function validateReport(reportId: number, data: { admin_id: number }) {
+export async function validateReport(
+  reportId: number,
+  data: { admin_id: number }
+) {
   return request(`/reports/${reportId}/validate`, "POST", data);
 }
 
-export async function resolveReport(reportId: number, data: { admin_id: number }) {
+export async function resolveReport(
+  reportId: number,
+  data: { admin_id: number }
+) {
   return request(`/reports/${reportId}/resolve`, "POST", data);
 }
 
-export async function rateReport(reportId: number, data: { rating: number }) {
+export async function rateReport(
+  reportId: number,
+  data: { rating: number }
+) {
   return request(`/reports/${reportId}/rate`, "POST", data);
 }
 
 // =============================================================================
-// REPORT SEARCH & FILTER (with category + date sort)
+// SEARCH & FILTER
 // =============================================================================
 export async function searchReports(
   query: string,
@@ -224,11 +297,13 @@ export async function searchReports(
   if (category) params.append("category", category);
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
-  if (sort) params.append("sort", sort); // ✅ NEW LINE
+  if (sort) params.append("sort", sort);
+
+  const creds = await getStoredCredentials();
+  if (creds) params.append("admin_id", creds.userId.toString());
 
   return request(`/reports/search?${params.toString()}`);
 }
-
 
 export async function filterReports(
   status?: string,
@@ -242,16 +317,23 @@ export async function filterReports(
   if (category) params.append("category", category);
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
-  if (sort) params.append("sort", sort); // ✅ NEW
+  if (sort) params.append("sort", sort);
+
+  const creds = await getStoredCredentials();
+  if (creds) params.append("admin_id", creds.userId.toString());
 
   return request(`/reports/filter?${params.toString()}`);
 }
 
-
-export async function getUserReports(userId: number, page?: number, limit?: number) {
+export async function getUserReports(
+  userId: number,
+  page?: number,
+  limit?: number
+) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
+
   return request(`/reports/user/${userId}?${params.toString()}`);
 }
 
@@ -262,15 +344,18 @@ export async function getLocations(page?: number, limit?: number) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
-  const query = params.toString();
-  return request(`/locations${query ? `?${query}` : ""}`);
+
+  return request(`/locations?${params.toString()}`);
 }
 
 export async function getLocation(id: number) {
   return request(`/locations/${id}`);
 }
 
-export async function createLocation(data: { latitude: number; longitude: number }) {
+export async function createLocation(data: {
+  latitude: number;
+  longitude: number;
+}) {
   return request("/locations", "POST", data);
 }
 
@@ -283,7 +368,7 @@ export async function deleteLocation(id: number) {
 }
 
 // =============================================================================
-// LOCATION SEARCH & ANALYTICS
+// LOCATION SEARCH
 // =============================================================================
 export async function getLocationsNearby(params: {
   latitude: number;
@@ -291,56 +376,60 @@ export async function getLocationsNearby(params: {
   radius?: number;
   limit?: number;
 }) {
-  const searchParams = new URLSearchParams();
-  searchParams.append("latitude", params.latitude.toString());
-  searchParams.append("longitude", params.longitude.toString());
-  if (params.radius) searchParams.append("radius", params.radius.toString());
-  if (params.limit) searchParams.append("limit", params.limit.toString());
-  return request(`/locations/nearby?${searchParams.toString()}`);
+  const qs = new URLSearchParams();
+  qs.append("latitude", params.latitude.toString());
+  qs.append("longitude", params.longitude.toString());
+  if (params.radius) qs.append("radius", params.radius.toString());
+  if (params.limit) qs.append("limit", params.limit.toString());
+
+  return request(`/locations/nearby?${qs.toString()}`);
 }
 
 export async function getLocationsWithReports(page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-  return request(`/locations/with-reports?${params.toString()}`);
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+
+  return request(`/locations/with-reports?${qs.toString()}`);
 }
 
 export async function getLocationStats() {
   return request("/locations/stats");
 }
 
-export async function searchLocations(params?: {
+export async function searchLocations(params: {
   latitude?: number;
   longitude?: number;
   page?: number;
   limit?: number;
 }) {
-  const searchParams = new URLSearchParams();
-  if (params?.latitude) searchParams.append("latitude", params.latitude.toString());
-  if (params?.longitude) searchParams.append("longitude", params.longitude.toString());
-  if (params?.page) searchParams.append("page", params.page.toString());
-  if (params?.limit) searchParams.append("limit", params.limit.toString());
-  const query = searchParams.toString();
-  return request(`/locations/search${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (params.latitude) qs.append("latitude", params.latitude.toString());
+  if (params.longitude) qs.append("longitude", params.longitude.toString());
+  if (params.page) qs.append("page", params.page.toString());
+  if (params.limit) qs.append("limit", params.limit.toString());
+
+  return request(`/locations/search?${qs.toString()}`);
 }
 
 // =============================================================================
 // ADMINISTRATORS
 // =============================================================================
 export async function getAdministrators(page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-  const query = params.toString();
-  return request(`/administrators${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+  return request(`/administrators?${qs.toString()}`);
 }
 
 export async function getAdministrator(id: number) {
   return request(`/administrators/${id}`);
 }
 
-export async function createAdministrator(data: { user_id: number; department: string }) {
+export async function createAdministrator(data: {
+  user_id: number;
+  department: string;
+}) {
   return request("/administrators", "POST", data);
 }
 
@@ -352,8 +441,12 @@ export async function deleteAdministrator(id: number) {
   return request(`/administrators/${id}`, "DELETE");
 }
 
+export async function getReportsForAdmin(adminId: number) {
+  return request(`/api/admin/${adminId}/reports`);
+}
+
 // =============================================================================
-// ADMINISTRATOR MANAGEMENT
+// ADMIN MGMT
 // =============================================================================
 export async function getAdministratorsByDepartment(department: string) {
   return request(`/administrators/department/${department}`);
@@ -367,15 +460,19 @@ export async function getAvailableAdministrators() {
   return request("/administrators/available");
 }
 
-export async function checkUserIsAdministrator(userId: number) {
-  return request(`/administrators/check/${userId}`);
+// 🔹 Uses /me/admin?user_id=...
+export async function checkUserIsAdministrator(
+  userId: number
+): Promise<AdminInfo> {
+  const qs = new URLSearchParams();
+  qs.append("user_id", userId.toString());
+  return request(`/me/admin?${qs.toString()}`);
 }
 
 export async function getAdministratorPerformanceReport(days?: number) {
-  const params = new URLSearchParams();
-  if (days) params.append("days", days.toString());
-  const query = params.toString();
-  return request(`/administrators/performance${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (days) qs.append("days", days.toString());
+  return request(`/administrators/performance?${qs.toString()}`);
 }
 
 // =============================================================================
@@ -389,7 +486,10 @@ export async function getDepartment(name: string) {
   return request(`/departments/${name}`);
 }
 
-export async function createDepartment(data: { department: string; admin_id?: number }) {
+export async function createDepartment(data: {
+  department: string;
+  admin_id?: number;
+}) {
   return request("/departments", "POST", data);
 }
 
@@ -401,21 +501,6 @@ export async function deleteDepartment(name: string) {
   return request(`/departments/${name}`, "DELETE");
 }
 
-export async function getDepartmentAdmin(departmentName: string) {
-  return request(`/departments/${departmentName}/admin`);
-}
-
-export async function assignDepartmentAdmin(departmentName: string, data: { admin_id: number }) {
-  return request(`/departments/${departmentName}/admin`, "POST", data);
-}
-
-export async function removeDepartmentAdmin(departmentName: string) {
-  return request(`/departments/${departmentName}/admin`, "DELETE");
-}
-
-// =============================================================================
-// DEPARTMENT MANAGEMENT
-// =============================================================================
 export async function getDepartmentsWithAdminInfo() {
   return request("/departments/with-admin-info");
 }
@@ -436,68 +521,94 @@ export async function getAllDepartmentsStats() {
   return request("/departments/stats/all");
 }
 
-export async function checkAdminAssignment(adminId: number, departmentName: string) {
+export async function checkAdminAssignment(
+  adminId: number,
+  departmentName: string
+) {
   return request(`/departments/check-assignment/${adminId}/${departmentName}`);
 }
 
 // =============================================================================
-// PINNED REPORTS (requires logged-in user)
+// PINNED REPORTS
 // =============================================================================
-export async function getPinnedReports(userId?: number, page?: number, limit?: number) {
+export async function getPinnedReports(
+  userId?: number,
+  page?: number,
+  limit?: number
+) {
   if (!userId) {
-    const credentials = await getStoredCredentials();
-    if (!credentials) throw new Error("User not authenticated");
-    userId = credentials.userId;
+    const creds = await getStoredCredentials();
+    if (!creds) throw new Error("Not authenticated");
+    userId = creds.userId;
   }
 
-  const params = new URLSearchParams();
-  params.append("user_id", userId.toString());
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
+  const qs = new URLSearchParams();
+  qs.append("user_id", userId.toString());
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
 
-  const query = params.toString();
-  return request(`/pinned-reports${query ? `?${query}` : ""}`);
+  return request(`/pinned-reports?${qs.toString()}`);
 }
 
-export async function pinReport(data: { user_id: number; report_id: number }) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
-  if (data.user_id !== credentials.userId) throw new Error("User ID mismatch");
+export async function pinReport(data: {
+  user_id: number;
+  report_id: number;
+}) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== data.user_id)
+    throw new Error("User ID mismatch");
+
   return request("/pinned-reports", "POST", data);
 }
 
 export async function unpinReport(userId: number, reportId: number) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
-  if (userId !== credentials.userId) throw new Error("User ID mismatch");
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
+    throw new Error("User ID mismatch");
 
-  const params = new URLSearchParams();
-  params.append("user_id", userId.toString());
-  return request(`/pinned-reports/${reportId}?${params.toString()}`, "DELETE");
+  const qs = new URLSearchParams();
+  qs.append("user_id", userId.toString());
+
+  return request(`/pinned-reports/${reportId}?${qs.toString()}`, "DELETE");
 }
 
-export async function getUserPinnedReports(userId: number, page?: number, limit?: number) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
-  if (userId !== credentials.userId) throw new Error("User ID mismatch");
+export async function getUserPinnedReports(
+  userId: number,
+  page?: number,
+  limit?: number
+) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
+    throw new Error("User ID mismatch");
 
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-  return request(`/users/${userId}/pinned-reports?${params.toString()}`);
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+
+  return request(`/users/${userId}/pinned-reports?${qs.toString()}`);
 }
 
 export async function checkPinnedStatus(userId: number, reportId: number) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
-  if (userId !== credentials.userId) throw new Error("User ID mismatch");
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
+    throw new Error("User ID mismatch");
+
   return request(`/pinned-reports/check/${userId}/${reportId}`);
 }
 
-export async function getPinnedReportDetail(userId: number, reportId: number) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
-  if (userId !== credentials.userId) throw new Error("User ID mismatch");
+export async function getPinnedReportDetail(
+  userId: number,
+  reportId: number
+) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
+    throw new Error("User ID mismatch");
+
   return request(`/pinned-reports/${userId}/${reportId}/details`);
 }
 
@@ -513,9 +624,11 @@ export async function getDepartmentOverviewStats(department: string) {
 }
 
 export async function getUserStats(userId: number) {
-  const credentials = await getStoredCredentials();
-  if (!credentials) throw new Error("User not authenticated");
-  if (userId !== credentials.userId) throw new Error("User ID mismatch");
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
+    throw new Error("User ID mismatch");
+
   return request(`/stats/user/${userId}`);
 }
 
@@ -535,32 +648,34 @@ export async function getAdminDashboard() {
 }
 
 export async function getPendingReports(page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-  const query = params.toString();
-  return request(`/admin/reports/pending${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+  return request(`/admin/reports/pending?${qs.toString()}`);
 }
 
-export async function getAssignedReports(adminId: number, page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  params.append("admin_id", adminId.toString());
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-  return request(`/admin/reports/assigned?${params.toString()}`);
+export async function getAssignedReports(
+  adminId: number,
+  page?: number,
+  limit?: number
+) {
+  const qs = new URLSearchParams();
+  qs.append("admin_id", adminId.toString());
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+  return request(`/admin/reports/assigned?${qs.toString()}`);
 }
 
 // =============================================================================
 // DEBUG
 // =============================================================================
 export async function testConnection() {
-  console.log("Testing API connection to:", API_BASE_URL);
+  console.log("Testing API connection:", API_BASE_URL);
   try {
-    const response = await fetch(`${API_BASE_URL}/`, { method: "GET" });
-    console.log("Connection test successful, status:", response.status);
-    return true;
-  } catch (error) {
-    console.error("Connection test failed:", error);
+    const res = await fetch(`${API_BASE_URL}/`);
+    return res.ok;
+  } catch (err) {
+    console.error("Connection test failed:", err);
     return false;
   }
 }
