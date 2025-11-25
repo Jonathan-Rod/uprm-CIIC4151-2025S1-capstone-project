@@ -19,7 +19,7 @@ const getApiBaseUrl = () => {
 
     // iOS (Expo Go on physical device)
     if (Platform.OS === "ios") {
-      const iosUrl = "http://192.168.4.22:5000"; 
+      const iosUrl = "http://192.168.4.49:5000"; 
       console.log("Using iOS URL:", iosUrl);
       return iosUrl;
     }
@@ -243,6 +243,8 @@ export async function createReport(data: ReportFormData) {
   const payload = {
     ...data,
     user_id: creds.userId,
+    image_url: data.image_url?.trim() || null,
+  location_id: data.location_id ?? null,
   };
 
   return request("/reports", "POST", payload);

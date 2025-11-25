@@ -22,7 +22,7 @@ export enum ReportCategory {
   WANDERING_WASTE = 'wandering_waste',
   FALLEN_TREE = 'fallen_tree',
   PIPE_LEAK = 'pipe_leak',
-  NONE = 'none',
+  OTHER = 'other',
 }
 
 export enum Department {

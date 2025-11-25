@@ -124,7 +124,7 @@ class ReportsHandler:
         try:
             title = data.get("title")
             description = data.get("description")
-            category = data.get("category", "none")
+            category = data.get("category", "other")
             location_id = data.get("location_id")
             image_url = data.get("image_url")
             created_by = data.get("user_id")
@@ -153,7 +153,7 @@ class ReportsHandler:
                 "pipe_leak",
                 "fallen_tree",
                 "water_outage",
-                "none",
+                "other",
             ]
             if category not in valid_categories:
                 return (
@@ -220,7 +220,7 @@ class ReportsHandler:
                 "flooding",
                 "pipe_leak",
                 "fallen_tree",
-                "none",
+                "other",
             ]:
                 return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
             if rating and (rating < 1 or rating > 5):
@@ -313,7 +313,7 @@ class ReportsHandler:
                 "sinkhole",
                 "fallen_tree",
                 "pipe_leak",
-                "none",
+                "other",
             ]:
                 return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
 

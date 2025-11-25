@@ -1,8 +1,6 @@
 -- Drop tables in correct order to handle foreign key dependencies
 DROP TABLE IF EXISTS pinned_reports;
 
-DROP TABLE IF EXISTS civilians;
-
 DROP TABLE IF EXISTS department_admins;
 
 DROP TABLE IF EXISTS reports;
@@ -14,6 +12,8 @@ DROP TABLE IF EXISTS location;
 DROP TABLE IF EXISTS verifications;
 
 DROP TABLE IF EXISTS users;
+
+DROP TABLE IF EXISTS admin_codes;
 
 -- Users table with suspended and pinned attributes
 CREATE TABLE users (
@@ -45,8 +45,8 @@ CREATE TABLE administrators (
 -- Location table
 CREATE TABLE location (
     id SERIAL PRIMARY KEY,
-    latitude DECIMAL(9, 6) NOT NULL,
-    longitude DECIMAL(9, 6) NOT NULL
+    latitude DECIMAL(9, 6),
+    longitude DECIMAL(9, 6)
 );
 
 -- Reports table with category
@@ -76,9 +76,9 @@ CREATE TABLE reports (
             'sinkhole',
             'fallen_tree',
             'pipe_leak',
-            'none'
+            'other'
         )
-    ) DEFAULT 'none',
+    ) DEFAULT 'other',
     created_by INTEGER REFERENCES users (id) NOT NULL,
     validated_by INTEGER REFERENCES administrators (id),
     resolved_by INTEGER REFERENCES administrators (id),

@@ -25,7 +25,7 @@ export default function ReportForm({
   const { colors } = useAppColors();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ReportCategory>(ReportCategory.NONE);
+  const [category, setCategory] = useState<ReportCategory>(ReportCategory.OTHER);
   const [locationId, setLocationId] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [occurredOn, setOccurredOn] = useState<Date>(new Date());
@@ -48,7 +48,7 @@ export default function ReportForm({
   const clearForm = () => {
     setTitle("");
     setDescription("");
-    setCategory(ReportCategory.NONE);
+    setCategory(ReportCategory.OTHER);
     setLocationId(null);
     setImageUrl("");
     setOccurredOn(new Date());

@@ -52,5 +52,5 @@ CATEGORY_TO_DEPARTMENT = {
     "pipe_leak": "AAA",
 
     # "other" can be None or some default; up to you
-    "none": None,
+    "other": None,
 }
