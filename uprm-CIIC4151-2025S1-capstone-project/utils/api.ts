@@ -19,7 +19,7 @@ const getApiBaseUrl = () => {
 
     // iOS (Expo Go on physical device)
     if (Platform.OS === "ios") {
-      const iosUrl = "http://192.168.4.49:5000"; 
+      const iosUrl = "http://192.168.4.22:5000"; 
       console.log("Using iOS URL:", iosUrl);
       return iosUrl;
     }

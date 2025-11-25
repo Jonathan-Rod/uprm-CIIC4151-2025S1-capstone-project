@@ -23,7 +23,8 @@ CREATE TABLE users (
     ADMIN BOOLEAN DEFAULT FALSE,
     suspended BOOLEAN DEFAULT FALSE,
     pinned BOOLEAN DEFAULT FALSE, -- verify
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_reports INTEGER
 );
 
 -- Ignore for now (email verification)
@@ -85,7 +86,7 @@ CREATE TABLE reports (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP,
     location INTEGER REFERENCES location (id),
-    image_url TEXT,
+    image_url VARCHAR,
     rating INTEGER CHECK (
         rating >= 1
         AND rating <= 5
