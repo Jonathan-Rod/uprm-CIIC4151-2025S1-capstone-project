@@ -4,7 +4,6 @@ import { Badge, Card, Text, Chip } from "react-native-paper";
 import type { ReportData } from "@/types/interfaces";
 import { ReportStatus, ReportCategory } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface ReportCardProps {
   report: Omit<ReportData, "category"> & { category: ReportCategory };
@@ -58,42 +57,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
     }
   };
 
-  const getStatusLabel = (status: ReportStatus) => {
-    switch (status) {
-      case ReportStatus.OPEN:
-        return "Open";
-      case ReportStatus.IN_PROGRESS:
-        return "In Progress";
-      case ReportStatus.RESOLVED:
-        return "Resolved";
-      case ReportStatus.DENIED:
-        return "Denied";
-      case ReportStatus.CLOSED:
-        return "Closed";
-      default:
-        return status;
-    }
-  };
-
-  const getCategoryIcon = (category: ReportCategory) => {
-    switch (category) {
-      case ReportCategory.POTHOLE:
-        return "🕳️";
-      case ReportCategory.STREET_LIGHT:
-        return "💡";
-      case ReportCategory.TRAFFIC_SIGNAL:
-        return "🚦";
-      case ReportCategory.ROAD_DAMAGE:
-        return "🛣️";
-      case ReportCategory.SANITATION:
-        return "🧹";
-      case ReportCategory.OTHER:
-        return "📋";
-      default:
-        return "📄";
-    }
-  };
-
   const getCategoryLabel = (category: ReportCategory) => {
     switch (category) {
       case ReportCategory.POTHOLE:
@@ -140,15 +103,12 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
     });
   };
 
-  // Check if the image URL is the placeholder
   const hasValidImage =
     report.image_url &&
     !report.image_url.includes("via.placeholder.com") &&
     !report.image_url.includes("No+Image+Available");
 
   const statusStyles = getStatusStyles(report.status);
-  const categoryColor = getCategoryColor(report.category);
-
   const styles = createStyles(colors);
 
   return (
@@ -159,7 +119,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
       accessibilityLabel={`Report card for ${report.title}`}
       testID={`report-card-${report.id}`}
     >
-      {/* Only show image if it's not the placeholder */}
       {hasValidImage && (
         <Card.Cover
           source={{ uri: report.image_url }}
@@ -170,11 +129,9 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
       <Card.Content
         style={[
           styles.cardContent,
-          // Adjust padding if no image
           !hasValidImage && styles.cardContentNoImage,
         ]}
       >
-        {/* Header with Title and Status */}
         <View style={styles.headerRow}>
           <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
             {report.title}
@@ -185,12 +142,9 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
               { backgroundColor: statusStyles.backgroundColor },
             ]}
             size={16}
-          >
-            {/* {getStatusLabel(report.status)} */}
-          </Badge>
+          />
         </View>
 
-        {/* Category and ID */}
         <View style={styles.metaRow}>
           <Chip
             mode="outlined"
@@ -198,28 +152,12 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
             textStyle={styles.categoryText}
             compact
           >
-            {/* {getCategoryIcon(report.category)}{" "} */}
             {getCategoryLabel(report.category)}
           </Chip>
-          {/* <Text variant="bodySmall" style={styles.reportId}>
-            #{report.id}
-          </Text> */}
         </View>
 
-        {/* Description */}
-        {/* <Text variant="bodyMedium" style={styles.description} numberOfLines={3}>
-          {report.description}
-        </Text> */}
-
-        {/* Metadata */}
         <View style={styles.metadata}>
           <View style={styles.metaItem}>
-            {/* <MaterialCommunityIcons
-              name="calendar-plus"
-              size={14}
-              color={colors.textMuted}
-              style={styles.metaIcon}
-            /> */}
             <Text variant="bodySmall" style={styles.metaLabel}>
               Created:
             </Text>
@@ -230,12 +168,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.resolved_at && (
             <View style={styles.metaItem}>
-              {/* <MaterialCommunityIcons
-                name="calendar-check"
-                size={14}
-                color={colors.success}
-                style={styles.metaIcon}
-              /> */}
               <Text variant="bodySmall" style={styles.metaLabel}>
                 Resolved:
               </Text>
@@ -250,12 +182,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.rating && (
             <View style={styles.metaItem}>
-              {/* <MaterialCommunityIcons
-                name="thumb-up-outline"
-                size={14}
-                color={colors.warning}
-                style={styles.metaIcon}
-              /> */}
               <Text variant="bodySmall" style={styles.metaLabel}>
                 Rating:
               </Text>
@@ -285,7 +211,7 @@ const createStyles = (colors: any) =>
       gap: 12,
     },
     cardContentNoImage: {
-      paddingTop: 16, // Extra padding when no image
+      paddingTop: 16,
     },
     headerRow: {
       flexDirection: "row",
@@ -318,23 +244,12 @@ const createStyles = (colors: any) =>
       fontWeight: "500",
       color: colors.chip.text,
     },
-    reportId: {
-      fontWeight: "500",
-      color: colors.textMuted,
-    },
-    description: {
-      lineHeight: 20,
-      color: colors.textSecondary,
-    },
     metadata: {
       gap: 8,
     },
     metaItem: {
       flexDirection: "row",
       gap: 8,
-    },
-    metaIcon: {
-      marginRight: 4,
     },
     metaLabel: {
       fontWeight: "600",
