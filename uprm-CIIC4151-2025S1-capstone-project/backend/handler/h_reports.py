@@ -131,7 +131,13 @@ class ReportsHandler:
             location_id = data.get("location_id")
             image_url = data.get("image_url")
 
-            if status and status not in ["resolved", "denied", "in_progress", "open", "closed"]:
+            if status and status not in [
+                "resolved",
+                "denied",
+                "in_progress",
+                "open",
+                "closed",
+            ]:
                 return jsonify({"error_msg": "Invalid status"}), HTTP_STATUS.BAD_REQUEST
             if category and category not in [
                 "pothole",
@@ -141,7 +147,10 @@ class ReportsHandler:
                 "sanitation",
                 "other",
             ]:
-                return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
+                return (
+                    jsonify({"error_msg": "Invalid category"}),
+                    HTTP_STATUS.BAD_REQUEST,
+                )
             if rating and (rating < 1 or rating > 5):
                 return (
                     jsonify({"error_msg": "Rating must be between 1 and 5"}),
@@ -186,7 +195,9 @@ class ReportsHandler:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
     # ---------- UNIFIED ENTRY POINT ----------
-    def search_reports(self, query=None, page=1, limit=10, status=None, category=None, sort=None):
+    def search_reports(
+        self, query=None, page=1, limit=10, status=None, category=None, sort=None
+    ):
         """
         Handles:
         - search only      (/reports/search?q=...)
@@ -201,7 +212,9 @@ class ReportsHandler:
 
             if not q and not s and not c:
                 return (
-                    jsonify({"error_msg": "Provide at least one of: q, status, category"}),
+                    jsonify(
+                        {"error_msg": "Provide at least one of: q, status, category"}
+                    ),
                     HTTP_STATUS.BAD_REQUEST,
                 )
 
@@ -216,7 +229,10 @@ class ReportsHandler:
                 "sanitation",
                 "other",
             ]:
-                return jsonify({"error_msg": "Invalid category"}), HTTP_STATUS.BAD_REQUEST
+                return (
+                    jsonify({"error_msg": "Invalid category"}),
+                    HTTP_STATUS.BAD_REQUEST,
+                )
 
             offset = (page - 1) * limit
             dao = ReportsDAO()
@@ -250,12 +266,16 @@ class ReportsHandler:
             )
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
-    # ----------------------------------------
 
     # Backward-compat: keep /reports/filter but delegate (now supports sort).
     def filter_reports(self, status, category, page=1, limit=10, sort=None):
         return self.search_reports(
-            query=None, page=page, limit=limit, status=status, category=category, sort=sort
+            query=None,
+            page=page,
+            limit=limit,
+            status=status,
+            category=category,
+            sort=sort,
         )
 
     def get_reports_by_user(self, user_id, page=1, limit=10):
@@ -353,6 +373,141 @@ class ReportsHandler:
                     HTTP_STATUS.INTERNAL_SERVER_ERROR,
                 )
             return jsonify(self.map_to_dict(updated_report)), HTTP_STATUS.OK
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    def get_report_rating_status(self, report_id, user_id):
+        """Check if a user has rated a specific report"""
+        try:
+            if not user_id:
+                return (
+                    jsonify({"error_msg": "Missing user_id parameter"}),
+                    HTTP_STATUS.BAD_REQUEST,
+                )
+
+            dao = ReportsDAO()
+            rating_status = dao.get_user_rating_status(report_id, user_id)
+
+            return (
+                jsonify(
+                    {
+                        "rated": rating_status["rated"],
+                        "rating": rating_status["rating"],
+                        "user_id": user_id,
+                        "report_id": report_id,
+                    }
+                ),
+                HTTP_STATUS.OK,
+            )
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    def get_report_rating(self, report_id):
+        """Get overall rating statistics for a report"""
+        try:
+            dao = ReportsDAO()
+            rating_stats = dao.get_report_rating_stats(report_id)
+
+            return (
+                jsonify(
+                    {
+                        "report_id": report_id,
+                        "average_rating": rating_stats["average_rating"],
+                        "total_ratings": rating_stats["total_ratings"],
+                        "rating_distribution": rating_stats["distribution"],
+                    }
+                ),
+                HTTP_STATUS.OK,
+            )
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    def change_report_status(self, report_id, data):
+        """Generic status change for admins"""
+        try:
+            if not data:
+                return jsonify({"error_msg": "Missing data"}), HTTP_STATUS.BAD_REQUEST
+
+            status = data.get("status")
+            admin_id = data.get("admin_id")
+
+            if not status or not admin_id:
+                return (
+                    jsonify({"error_msg": "Missing status or admin_id"}),
+                    HTTP_STATUS.BAD_REQUEST,
+                )
+
+            valid_statuses = ["open", "in_progress", "resolved", "denied", "closed"]
+            if status not in valid_statuses:
+                return (
+                    jsonify(
+                        {
+                            "error_msg": f"Invalid status. Must be one of: {valid_statuses}"
+                        }
+                    ),
+                    HTTP_STATUS.BAD_REQUEST,
+                )
+
+            dao = ReportsDAO()
+
+            if not dao.get_report_by_id(report_id):
+                return (
+                    jsonify({"error_msg": "Report not found"}),
+                    HTTP_STATUS.NOT_FOUND,
+                )
+
+            # Update report status
+            update_data = {"status": status}
+            if status == "resolved":
+                update_data["resolved_by"] = admin_id
+                update_data["resolved_at"] = "NOW()"
+            elif status == "in_progress":
+                update_data["validated_by"] = admin_id
+
+            updated_report = dao.update_report(report_id, **update_data)
+
+            if not updated_report:
+                return (
+                    jsonify({"error_msg": "Failed to update report status"}),
+                    HTTP_STATUS.INTERNAL_SERVER_ERROR,
+                )
+
+            return jsonify(self.map_to_dict(updated_report)), HTTP_STATUS.OK
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    def get_status_options(self):
+        """Get available status options for admin UI"""
+        try:
+            status_options = [
+                {
+                    "value": "open",
+                    "label": "Open",
+                    "description": "New report awaiting validation",
+                },
+                {
+                    "value": "in_progress",
+                    "label": "In Progress",
+                    "description": "Report validated and being worked on",
+                },
+                {
+                    "value": "resolved",
+                    "label": "Resolved",
+                    "description": "Report has been resolved",
+                },
+                {
+                    "value": "denied",
+                    "label": "Denied",
+                    "description": "Report was rejected",
+                },
+                {
+                    "value": "closed",
+                    "label": "Closed",
+                    "description": "Report completed and closed",
+                },
+            ]
+
+            return jsonify({"status_options": status_options}), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
