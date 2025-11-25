@@ -58,7 +58,8 @@ async function request(endpoint: string, method = "GET", body?: any) {
     console.log(`Response Status: ${response.status}`);
 
     if (!response.ok) {
-      if (response.status === 401) throw new Error("Authentication failed - Please log in again");
+      if (response.status === 401)
+        throw new Error("Authentication failed - Please log in again");
       if (response.status === 403) throw new Error("Access forbidden");
       if (response.status === 404) throw new Error("Resource not found");
       if (response.status >= 500) throw new Error("Server error");
@@ -74,7 +75,9 @@ async function request(endpoint: string, method = "GET", body?: any) {
     console.error(`API Error for ${method} ${endpoint}:`, error);
 
     if (error instanceof TypeError && error.message === "Failed to fetch") {
-      throw new Error(`Cannot connect to server at ${url}. Please check if the backend is running.`);
+      throw new Error(
+        `Cannot connect to server at ${url}. Please check if the backend is running.`
+      );
     }
 
     throw error;
@@ -113,7 +116,11 @@ export async function getUser(id: number) {
   return request(`/users/${id}`);
 }
 
-export async function createUser(data: { email: string; password: string; admin: boolean }) {
+export async function createUser(data: {
+  email: string;
+  password: string;
+  admin: boolean;
+}) {
   const result = await request("/users", "POST", data);
   if (result && result.id) return result;
   throw new Error(result?.error_msg || "User creation failed");
@@ -167,7 +174,6 @@ export async function getReports(
   return request(`/reports${query ? `?${query}` : ""}`);
 }
 
-
 export async function getReport(id: number) {
   return request(`/reports/${id}`);
 }
@@ -195,11 +201,17 @@ export async function deleteReport(id: number) {
 // =============================================================================
 // REPORT ACTIONS
 // =============================================================================
-export async function validateReport(reportId: number, data: { admin_id: number }) {
+export async function validateReport(
+  reportId: number,
+  data: { admin_id: number }
+) {
   return request(`/reports/${reportId}/validate`, "POST", data);
 }
 
-export async function resolveReport(reportId: number, data: { admin_id: number }) {
+export async function resolveReport(
+  reportId: number,
+  data: { admin_id: number }
+) {
   return request(`/reports/${reportId}/resolve`, "POST", data);
 }
 
@@ -229,7 +241,6 @@ export async function searchReports(
   return request(`/reports/search?${params.toString()}`);
 }
 
-
 export async function filterReports(
   status?: string,
   category?: string,
@@ -247,8 +258,11 @@ export async function filterReports(
   return request(`/reports/filter?${params.toString()}`);
 }
 
-
-export async function getUserReports(userId: number, page?: number, limit?: number) {
+export async function getUserReports(
+  userId: number,
+  page?: number,
+  limit?: number
+) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
@@ -270,7 +284,10 @@ export async function getLocation(id: number) {
   return request(`/locations/${id}`);
 }
 
-export async function createLocation(data: { latitude: number; longitude: number }) {
+export async function createLocation(data: {
+  latitude: number;
+  longitude: number;
+}) {
   return request("/locations", "POST", data);
 }
 
@@ -317,8 +334,10 @@ export async function searchLocations(params?: {
   limit?: number;
 }) {
   const searchParams = new URLSearchParams();
-  if (params?.latitude) searchParams.append("latitude", params.latitude.toString());
-  if (params?.longitude) searchParams.append("longitude", params.longitude.toString());
+  if (params?.latitude)
+    searchParams.append("latitude", params.latitude.toString());
+  if (params?.longitude)
+    searchParams.append("longitude", params.longitude.toString());
   if (params?.page) searchParams.append("page", params.page.toString());
   if (params?.limit) searchParams.append("limit", params.limit.toString());
   const query = searchParams.toString();
@@ -340,7 +359,10 @@ export async function getAdministrator(id: number) {
   return request(`/administrators/${id}`);
 }
 
-export async function createAdministrator(data: { user_id: number; department: string }) {
+export async function createAdministrator(data: {
+  user_id: number;
+  department: string;
+}) {
   return request("/administrators", "POST", data);
 }
 
@@ -389,7 +411,10 @@ export async function getDepartment(name: string) {
   return request(`/departments/${name}`);
 }
 
-export async function createDepartment(data: { department: string; admin_id?: number }) {
+export async function createDepartment(data: {
+  department: string;
+  admin_id?: number;
+}) {
   return request("/departments", "POST", data);
 }
 
@@ -405,7 +430,10 @@ export async function getDepartmentAdmin(departmentName: string) {
   return request(`/departments/${departmentName}/admin`);
 }
 
-export async function assignDepartmentAdmin(departmentName: string, data: { admin_id: number }) {
+export async function assignDepartmentAdmin(
+  departmentName: string,
+  data: { admin_id: number }
+) {
   return request(`/departments/${departmentName}/admin`, "POST", data);
 }
 
@@ -436,14 +464,21 @@ export async function getAllDepartmentsStats() {
   return request("/departments/stats/all");
 }
 
-export async function checkAdminAssignment(adminId: number, departmentName: string) {
+export async function checkAdminAssignment(
+  adminId: number,
+  departmentName: string
+) {
   return request(`/departments/check-assignment/${adminId}/${departmentName}`);
 }
 
 // =============================================================================
 // PINNED REPORTS (requires logged-in user)
 // =============================================================================
-export async function getPinnedReports(userId?: number, page?: number, limit?: number) {
+export async function getPinnedReports(
+  userId?: number,
+  page?: number,
+  limit?: number
+) {
   if (!userId) {
     const credentials = await getStoredCredentials();
     if (!credentials) throw new Error("User not authenticated");
@@ -476,7 +511,11 @@ export async function unpinReport(userId: number, reportId: number) {
   return request(`/pinned-reports/${reportId}?${params.toString()}`, "DELETE");
 }
 
-export async function getUserPinnedReports(userId: number, page?: number, limit?: number) {
+export async function getUserPinnedReports(
+  userId: number,
+  page?: number,
+  limit?: number
+) {
   const credentials = await getStoredCredentials();
   if (!credentials) throw new Error("User not authenticated");
   if (userId !== credentials.userId) throw new Error("User ID mismatch");
@@ -542,7 +581,11 @@ export async function getPendingReports(page?: number, limit?: number) {
   return request(`/admin/reports/pending${query ? `?${query}` : ""}`);
 }
 
-export async function getAssignedReports(adminId: number, page?: number, limit?: number) {
+export async function getAssignedReports(
+  adminId: number,
+  page?: number,
+  limit?: number
+) {
   const params = new URLSearchParams();
   params.append("admin_id", adminId.toString());
   if (page) params.append("page", page.toString());
@@ -563,4 +606,108 @@ export async function testConnection() {
     console.error("Connection test failed:", error);
     return false;
   }
+}
+
+// =============================================================================
+// TODO REPORT ACTIONS - MISSING ROUTES IN BACKEND (Later)
+// =============================================================================
+
+// TODO Add/Remove rating (like) to report
+export async function toggleRating(
+  reportId: number
+): Promise<{ rating: number; rated: boolean }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(`/reports/${reportId}/rate`, "POST", {
+    user_id: credentials.userId,
+  });
+}
+
+// TODO Check if user rated the report
+export async function checkReportRated(
+  reportId: number
+): Promise<{ rated: boolean; rating: number }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(
+    `/reports/${reportId}/rating-status?user_id=${credentials.userId}`
+  );
+}
+
+// TODO Get rating count for report
+export async function getReportRating(
+  reportId: number
+): Promise<{ rating: number }> {
+  return request(`/reports/${reportId}/rating`);
+}
+
+// TODO Check if report is pinned by current user
+export async function checkReportPinned(
+  reportId: number
+): Promise<{ pinned: boolean }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(
+    `/reports/${reportId}/pinned-status?user_id=${credentials.userId}`
+  );
+}
+
+// TODO Pin/Unpin report
+export async function togglePinReport(reportId: number, pin: boolean) {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  if (pin) {
+    return request("/pinned-reports", "POST", {
+      user_id: credentials.userId,
+      report_id: reportId,
+    });
+  } else {
+    return unpinReport(credentials.userId, reportId);
+  }
+}
+
+// TODO Edit report (author only)
+export async function editReport(
+  reportId: number,
+  data: {
+    title?: string;
+    description?: string;
+    category?: string;
+  }
+) {
+  return request(`/reports/${reportId}`, "PUT", data);
+}
+
+// TODO Admin status changes
+export async function changeReportStatus(
+  reportId: number,
+  status: string,
+  adminId: number
+) {
+  return request(`/reports/${reportId}/status`, "PUT", {
+    status,
+    admin_id: adminId,
+  });
+}
+
+// TODO Get available status options (for admin)
+export async function getStatusOptions() {
+  return request("/reports/status-options");
+}
+
+
+// TODO Get location details with address
+export async function getLocationDetails(locationId: number): Promise<{
+  id: number;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  city?: string;
+  country?: string;
+}> {
+  return request(`/locations/${locationId}/details`);
 }
