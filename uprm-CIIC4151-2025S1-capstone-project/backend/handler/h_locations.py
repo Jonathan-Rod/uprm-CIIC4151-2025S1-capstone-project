@@ -36,6 +36,15 @@ class LocationsHandler:
             )
         return base_dict
 
+    def map_to_dict_with_details(self, location):
+        """Map location with address details to dictionary"""
+        base_dict = self.map_to_dict(location)
+        if len(location) > 3:  # Includes address fields
+            base_dict["address"] = location[3]
+            base_dict["city"] = location[4]
+            base_dict["country"] = location[5]
+        return base_dict
+
     def get_all_locations(self, page=1, limit=10):
         try:
             offset = (page - 1) * limit
@@ -321,5 +330,26 @@ class LocationsHandler:
                 limit = request.args.get("limit", default=10, type=int)
                 return self.get_all_locations(page, limit)
 
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    # =============================================================================
+    # NEW METHOD FOR LOCATION DETAILS
+    # =============================================================================
+
+    def get_location_details(self, location_id):
+        """Get location details with address information"""
+        try:
+            dao = LocationsDAO()
+            location_details = dao.get_location_details(location_id)
+
+            if not location_details:
+                return (
+                    jsonify({"error_msg": "Location not found"}),
+                    HTTP_STATUS.NOT_FOUND,
+                )
+
+            location_dict = self.map_to_dict_with_details(location_details)
+            return jsonify(location_dict), HTTP_STATUS.OK
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
