@@ -11,7 +11,8 @@ import {
 import { Button, Text, ActivityIndicator, Snackbar } from "react-native-paper";
 import { useEffect, useState } from "react";
 import {
-  getReport, buildImageUrl,
+  getReport,
+  buildImageUrl,
   togglePinReport,
   toggleRating,
   changeReportStatus,
@@ -79,6 +80,7 @@ export default function ReportViewModal() {
 
   useEffect(() => {
     if (id) loadReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, currentUser]);
 
   const onRefresh = async () => {
@@ -148,6 +150,10 @@ export default function ReportViewModal() {
 
   const styles = createStyles(colors);
 
+  // finalImageUri: build full URL when report has image
+  const rawImageUrl = report?.image_url ?? "";
+  const finalImageUri = rawImageUrl ? buildImageUrl(rawImageUrl) : undefined;
+
   if (loading && !refreshing) {
     return (
       <ThemedView style={styles.container}>
@@ -156,16 +162,6 @@ export default function ReportViewModal() {
       </ThemedView>
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // IMAGE HANDLING
-  // ---------------------------------------------------------------------------
-  const rawImageUrl = report?.image_url || "";
-
-  const hasValidImage =
-    report?.image_url &&
-    !report.image_url.includes("via.placeholder.com") &&
-    !report.image_url.includes("No+Image+Available");
 
   const ErrorState = () => (
     <View style={styles.errorContainer}>
@@ -222,21 +218,16 @@ export default function ReportViewModal() {
         ) : report ? (
           <View style={styles.reportContent}>
             {/* ✅ FULL, CENTERED, NON-CROPPED IMAGE */}
-            {finalImageUri && (
+            {finalImageUri && !imageError && (
               <View style={styles.imageWrap}>
-          <>
-            {/* Image Display */}
-            {hasValidImage && !imageError && (
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{ uri: finalImageUri }}
-                  style={styles.fullImage}
-                  resizeMode="contain"
-                  source={{ uri: report.image_url as string }}
-                  style={styles.image}
-                  resizeMode="cover"
-                  onError={() => setImageError(true)}
-                />
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{ uri: finalImageUri }}
+                    style={styles.image}
+                    resizeMode="cover"
+                    onError={() => setImageError(true)}
+                  />
+                </View>
               </View>
             )}
 
@@ -256,7 +247,7 @@ export default function ReportViewModal() {
 
             {/* Report Details Component */}
             <ReportDetails report={report} ratingCount={ratingCount} />
-          </>
+          </View>
         ) : (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>Report not found.</Text>
@@ -312,13 +303,21 @@ const createStyles = (colors: any) =>
       textAlign: "center",
       color: colors.textSecondary,
     },
+    imageWrap: {
+      alignItems: "center",
+      marginBottom: 12,
+    },
     imageContainer: {
       borderRadius: 8,
       overflow: "hidden",
+      width: "100%",
     },
     image: {
       width: "100%",
       height: 200,
+    },
+    reportContent: {
+      width: "100%",
     },
     errorContainer: {
       alignItems: "center",
