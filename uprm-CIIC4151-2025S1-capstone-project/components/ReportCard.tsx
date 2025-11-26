@@ -149,7 +149,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
           !finalImageUri && styles.cardContentNoImage,
         ]}
       >
-        {/* Header with Title and Status */}
         <View style={styles.headerRow}>
           <Text variant="titleMedium" style={styles.title} numberOfLines={2}>
             {report.title}
@@ -166,7 +165,6 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
           </Badge>
         </View>
 
-        {/* Category and ID */}
         <View style={styles.metaRow}>
           <Chip
             mode="outlined"
@@ -238,6 +236,7 @@ const createStyles = (colors: any) =>
       gap: 12,
     },
     cardContentNoImage: {
+      paddingTop: 16,
       paddingTop: 16,
     },
     headerRow: {

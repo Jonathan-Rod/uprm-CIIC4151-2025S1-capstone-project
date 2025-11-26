@@ -249,6 +249,64 @@ class ReportsDAO:
 
         return rows, total_count
 
+    def get_user_rating_status(self, report_id, user_id):
+        """Check if a user has rated a specific report"""
+        query = """
+            SELECT rating
+            FROM reports
+            WHERE id = %s AND created_by = %s AND rating IS NOT NULL
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (report_id, user_id))
+            result = cur.fetchone()
+
+            if result:
+                return {"rated": True, "rating": result[0]}
+            else:
+                return {"rated": False, "rating": None}
+
+    def get_report_rating_stats(self, report_id):
+        """Get overall rating statistics for a report"""
+        # Get average rating and total ratings
+        query = """
+            SELECT
+                COALESCE(AVG(rating), 0) as average_rating,
+                COUNT(rating) as total_ratings
+            FROM reports
+            WHERE id = %s AND rating IS NOT NULL
+        """
+
+        # Get rating distribution
+        distribution_query = """
+            SELECT
+                rating,
+                COUNT(*) as count
+            FROM reports
+            WHERE id = %s AND rating IS NOT NULL
+            GROUP BY rating
+            ORDER BY rating
+        """
+
+        with self.conn.cursor() as cur:
+            # Get average and total
+            cur.execute(query, (report_id,))
+            stats_result = cur.fetchone()
+
+            # Get distribution
+            cur.execute(distribution_query, (report_id,))
+            distribution_results = cur.fetchall()
+
+            # Build distribution dictionary
+            distribution = {}
+            for rating, count in distribution_results:
+                distribution[str(rating)] = count
+
+            return {
+                "average_rating": float(stats_result[0]) if stats_result[0] else 0,
+                "total_ratings": stats_result[1],
+                "distribution": distribution,
+            }
+
     # -------------------------------
     # User-specific reports
     # -------------------------------

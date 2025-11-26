@@ -27,7 +27,7 @@ CREATE TABLE users (
     total_reports INTEGER
 );
 
--- Ignore for now (email verification)
+-- Email verification table
 CREATE TABLE verifications (
     id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,
@@ -46,8 +46,11 @@ CREATE TABLE administrators (
 -- Location table
 CREATE TABLE location (
     id SERIAL PRIMARY KEY,
-    latitude DECIMAL(9, 6),
-    longitude DECIMAL(9, 6)
+    latitude DECIMAL(9, 6) NOT NULL,
+    longitude DECIMAL(9, 6) NOT NULL,
+    address TEXT,
+    city VARCHAR(100),
+    country VARCHAR(100)
 );
 
 -- Reports table with category
@@ -60,7 +63,8 @@ CREATE TABLE reports (
             'resolved',
             'denied',
             'in_progress',
-            'open'
+            'open',
+            'closed'
         )
     ) DEFAULT 'open',
     category VARCHAR(50) CHECK (
@@ -109,9 +113,12 @@ CREATE TABLE pinned_reports (
     PRIMARY KEY (user_id, report_id)
 );
 
+-- Admin codes for user promotion
 CREATE TABLE admin_codes (
-  code VARCHAR PRIMARY KEY,
-  department VARCHAR NOT NULL CHECK (department IN ('DTOP','LUMA','AAA','DDS'))
+    code VARCHAR PRIMARY KEY,
+    department VARCHAR NOT NULL CHECK (
+        department IN ('DTOP', 'LUMA', 'AAA', 'DDS')
+    )
 );
 
 -- Create indexes for better performance
@@ -133,6 +140,14 @@ CREATE INDEX idx_pinned_reports_user_id ON pinned_reports (user_id);
 
 CREATE INDEX idx_pinned_reports_report_id ON pinned_reports (report_id);
 
+-- Insert admin codes for user promotion
+INSERT INTO
+    admin_codes (code, department)
+VALUES ('DTOP123', 'DTOP'),
+    ('LUMA456', 'LUMA'),
+    ('AAA789', 'AAA'),
+    ('DDS012', 'DDS');
+
 -- Insert 50 users from Puerto Rico
 INSERT INTO
     users (
@@ -144,350 +159,350 @@ INSERT INTO
     )
 VALUES (
         'juan.martinez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'maria.garcia@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'carlos.rodriguez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'ana.hernandez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'jose.lopez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'laura.gonzalez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'miguel.perez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'isabel.torres@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'rafael.diaz@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'elena.ramirez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'pedro.cruz@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'carmen.reyes@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'antonio.morales@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'patricia.ortiz@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'roberto.vargas@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'sandra.mendoza@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'fernando.guzman@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'gloria.santos@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'ricardo.castro@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'vanessa.rivera@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'oscar.mendez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'adriana.medina@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'manuel.aguilar@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'luz.figueroa@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'victor.rosario@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'diana.santiago@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'alejandro.delgado@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'monica.nazario@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'eduardo.vega@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'irene.colon@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'raul.serrano@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'teresa.miranda@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'hugo.rojas@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'nancy.suarez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'gilberto.acosta@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'rebeca.padilla@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'ernesto.maldonado@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'olga.cordero@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'arturo.camacho@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'lourdes.burgos@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'gerardo.quiles@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'margarita.pabon@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'sergio.zayas@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'celeste.betancourt@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'felipe.carrion@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'roxana.arroyo@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'rodolfo.valentin@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'yvonne.caban@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'esteban.collazo@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'noemi.negron@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
@@ -513,34 +528,190 @@ VALUES ('DTOP', 1),
     ('AAA', 3),
     ('DDS', 4);
 
--- Insert locations around Puerto Rico
+-- Insert locations around Puerto Rico with addresses
 INSERT INTO
-    location (latitude, longitude)
-VALUES (18.4655, -66.1057),
-    (18.3985, -66.0610),
-    (18.4401, -66.1286),
-    (18.4834, -66.1328),
-    (18.4105, -66.0505),
-    (18.3980, -66.1557),
-    (18.3794, -66.1630),
-    (18.4202, -66.1660),
-    (18.3801, -65.9574),
-    (18.4059, -65.9799),
-    (18.0111, -66.6141),
-    (17.9985, -66.6250),
-    (18.0250, -66.6030),
-    (18.2380, -66.0320),
-    (18.2319, -66.0450),
-    (18.2011, -67.1396),
-    (18.2145, -67.1450),
-    (18.4724, -66.7157),
-    (18.4550, -66.7300),
-    (18.3258, -65.6524),
-    (18.3350, -65.6600),
-    (18.1498, -65.8272),
-    (18.1400, -65.8200),
-    (18.0784, -66.9605),
-    (18.0622, -67.1497);
+    location (
+        latitude,
+        longitude,
+        address,
+        city,
+        country
+    )
+VALUES (
+        18.4655,
+        -66.1057,
+        'Avenida Ponce de León',
+        'San Juan',
+        'Puerto Rico'
+    ),
+    (
+        18.3985,
+        -66.0610,
+        'Avenida Roosevelt',
+        'San Juan',
+        'Puerto Rico'
+    ),
+    (
+        18.4401,
+        -66.1286,
+        'Calle De Diego',
+        'San Juan',
+        'Puerto Rico'
+    ),
+    (
+        18.4834,
+        -66.1328,
+        'Calle Loíza',
+        'San Juan',
+        'Puerto Rico'
+    ),
+    (
+        18.4105,
+        -66.0505,
+        'Avenida Fernández Juncos',
+        'San Juan',
+        'Puerto Rico'
+    ),
+    (
+        18.3980,
+        -66.1557,
+        'Carretera PR-2',
+        'Bayamón',
+        'Puerto Rico'
+    ),
+    (
+        18.3794,
+        -66.1630,
+        'Avenida Central',
+        'Bayamón',
+        'Puerto Rico'
+    ),
+    (
+        18.4202,
+        -66.1660,
+        'Calle Cuesta',
+        'Bayamón',
+        'Puerto Rico'
+    ),
+    (
+        18.3801,
+        -65.9574,
+        'Avenida Isla Verde',
+        'Carolina',
+        'Puerto Rico'
+    ),
+    (
+        18.4059,
+        -65.9799,
+        'Avenida Campo Rico',
+        'Carolina',
+        'Puerto Rico'
+    ),
+    (
+        18.0111,
+        -66.6141,
+        'Plaza del Mercado',
+        'Ponce',
+        'Puerto Rico'
+    ),
+    (
+        17.9985,
+        -66.6250,
+        'Avenida Las Américas',
+        'Ponce',
+        'Puerto Rico'
+    ),
+    (
+        18.0250,
+        -66.6030,
+        'Calle Cristina',
+        'Ponce',
+        'Puerto Rico'
+    ),
+    (
+        18.2380,
+        -66.0320,
+        'Carretera PR-1',
+        'Caguas',
+        'Puerto Rico'
+    ),
+    (
+        18.2319,
+        -66.0450,
+        'Plaza Degetau',
+        'Caguas',
+        'Puerto Rico'
+    ),
+    (
+        18.2011,
+        -67.1396,
+        'Avenida Hostos',
+        'Mayagüez',
+        'Puerto Rico'
+    ),
+    (
+        18.2145,
+        -67.1450,
+        'Plaza Colón',
+        'Mayagüez',
+        'Puerto Rico'
+    ),
+    (
+        18.4724,
+        -66.7157,
+        'Carretera PR-2',
+        'Arecibo',
+        'Puerto Rico'
+    ),
+    (
+        18.4550,
+        -66.7300,
+        'Plaza de Recreo',
+        'Arecibo',
+        'Puerto Rico'
+    ),
+    (
+        18.3258,
+        -65.6524,
+        'Carretera PR-3',
+        'Fajardo',
+        'Puerto Rico'
+    ),
+    (
+        18.3350,
+        -65.6600,
+        'Avenida Conquistador',
+        'Fajardo',
+        'Puerto Rico'
+    ),
+    (
+        18.1498,
+        -65.8272,
+        'Plaza Pública',
+        'Humacao',
+        'Puerto Rico'
+    ),
+    (
+        18.1400,
+        -65.8200,
+        'Avenida Boulevard',
+        'Humacao',
+        'Puerto Rico'
+    ),
+    (
+        18.0784,
+        -66.9605,
+        'Carretera PR-52',
+        'Juana Díaz',
+        'Puerto Rico'
+    ),
+    (
+        18.0622,
+        -67.1497,
+        'Avenida Los Patriotas',
+        'Cabo Rojo',
+        'Puerto Rico'
+    );
 
 -- Insert reports with realistic Puerto Rico issues
 INSERT INTO

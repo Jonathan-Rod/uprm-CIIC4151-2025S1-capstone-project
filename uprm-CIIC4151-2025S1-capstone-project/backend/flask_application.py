@@ -113,10 +113,12 @@ def handle_report(report_id):
         return handler.delete_report(report_id)
 
 
+
 @app.route("/reports/<int:report_id>/validate", methods=["POST"])
 def validate_report(report_id):
     handler = ReportsHandler()
     return handler.validate_report(report_id, request.json)
+
 
 
 @app.route("/reports/<int:report_id>/resolve", methods=["POST"])
@@ -125,10 +127,40 @@ def resolve_report(report_id):
     return handler.resolve_report(report_id, request.json)
 
 
+
 @app.route("/reports/<int:report_id>/rate", methods=["POST"])
 def rate_report(report_id):
     handler = ReportsHandler()
     return handler.rate_report(report_id, request.json)
+
+
+# -------------------------------------------------------
+# REPORTS - RATING & STATUS ENHANCEMENTS
+# -------------------------------------------------------
+@app.route("/reports/<int:report_id>/rating-status", methods=["GET"])
+def get_report_rating_status(report_id):
+    handler = ReportsHandler()
+    user_id = request.args.get("user_id", type=int)
+    return handler.get_report_rating_status(report_id, user_id)
+
+
+@app.route("/reports/<int:report_id>/rating", methods=["GET"])
+def get_report_rating(report_id):
+    handler = ReportsHandler()
+    return handler.get_report_rating(report_id)
+
+
+@app.route("/reports/<int:report_id>/status", methods=["PUT"])
+def change_report_status(report_id):
+    handler = ReportsHandler()
+    return handler.change_report_status(report_id, request.json)
+
+
+@app.route("/reports/status-options", methods=["GET"])
+def get_status_options():
+    handler = ReportsHandler()
+    return handler.get_status_options()
+
 
 
 # -------------------------------------------------------
@@ -145,6 +177,7 @@ def handle_users():
         return handler.get_all_users(page, limit)
 
 
+
 @app.route("/users/<int:user_id>", methods=["GET", "PUT", "DELETE"])
 def handle_user(user_id):
     handler = UsersHandler()
@@ -157,6 +190,40 @@ def handle_user(user_id):
 
 
 # -------------------------------------------------------
+# USERS - MANAGEMENT ACTIONS
+# -------------------------------------------------------
+@app.route("/users/<int:user_id>/suspend", methods=["POST"])
+def suspend_user(user_id):
+    handler = UsersHandler()
+    return handler.suspend_user(user_id)
+
+
+@app.route("/users/<int:user_id>/unsuspend", methods=["POST"])
+def unsuspend_user(user_id):
+    handler = UsersHandler()
+    return handler.unsuspend_user(user_id)
+
+
+@app.route("/users/<int:user_id>/pin", methods=["POST"])
+def pin_user(user_id):
+    handler = UsersHandler()
+    return handler.pin_user(user_id)
+
+
+@app.route("/users/<int:user_id>/unpin", methods=["POST"])
+def unpin_user(user_id):
+    handler = UsersHandler()
+    return handler.unpin_user(user_id)
+
+
+@app.route("/users/<int:user_id>/upgrade-admin", methods=["POST"])
+def upgrade_admin(user_id):
+    handler = UsersHandler()
+    return handler.upgrade_to_admin(user_id, request.json)
+
+
+
+# -------------------------------------------------------
 # AUTH
 # -------------------------------------------------------
 @app.route("/login", methods=["POST"])
@@ -165,10 +232,12 @@ def login():
     return handler.login(request.json)
 
 
+
 @app.route("/logout", methods=["POST"])
 def logout():
     handler = UsersHandler()
     return handler.logout()
+
 
 
 # -------------------------------------------------------
@@ -185,6 +254,7 @@ def handle_locations():
         return handler.get_all_locations(page, limit)
 
 
+
 @app.route("/locations/<int:location_id>", methods=["GET", "PUT", "DELETE"])
 def handle_location(location_id):
     handler = LocationsHandler()
@@ -196,10 +266,18 @@ def handle_location(location_id):
         return handler.delete_location(location_id)
 
 
+@app.route("/locations/<int:location_id>/details", methods=["GET"])
+def get_location_details(location_id):
+    handler = LocationsHandler()
+    return handler.get_location_details(location_id)
+
+
+
 @app.route("/locations/nearby", methods=["GET"])
 def get_locations_nearby():
     handler = LocationsHandler()
     return handler.get_locations_nearby()
+
 
 
 @app.route("/locations/with-reports", methods=["GET"])
@@ -210,16 +288,19 @@ def get_locations_with_reports():
     return handler.get_locations_with_reports(page, limit)
 
 
+
 @app.route("/locations/stats", methods=["GET"])
 def get_location_stats():
     handler = LocationsHandler()
     return handler.get_location_stats()
 
 
+
 @app.route("/locations/search", methods=["GET"])
 def search_locations():
     handler = LocationsHandler()
     return handler.search_locations()
+
 
 
 # -------------------------------------------------------
@@ -236,6 +317,7 @@ def handle_administrators():
         return handler.get_all_administrators(page, limit)
 
 
+
 @app.route("/administrators/<int:admin_id>", methods=["GET", "PUT", "DELETE"])
 def handle_administrator(admin_id):
     handler = AdministratorsHandler()
@@ -247,10 +329,12 @@ def handle_administrator(admin_id):
         return handler.delete_administrator(admin_id)
 
 
+
 @app.route("/administrators/department/<string:department>", methods=["GET"])
 def get_administrators_by_department(department):
     handler = AdministratorsHandler()
     return handler.get_administrators_by_department(department)
+
 
 
 @app.route("/administrators/<int:admin_id>/details", methods=["GET"])
@@ -259,10 +343,12 @@ def get_administrator_with_details(admin_id):
     return handler.get_administrator_with_details(admin_id)
 
 
+
 @app.route("/administrators/available", methods=["GET"])
 def get_available_administrators():
     handler = AdministratorsHandler()
     return handler.get_available_administrators()
+
 
 
 @app.route("/administrators/stats/all", methods=["GET"])
@@ -271,10 +357,12 @@ def get_all_admin_stats():
     return handler.get_all_admin_stats()
 
 
+
 @app.route("/administrators/check/<int:user_id>", methods=["GET"])
 def check_user_is_administrator(user_id):
     handler = AdministratorsHandler()
     return handler.check_user_is_administrator(user_id)
+
 
 
 @app.route("/administrators/performance", methods=["GET"])
@@ -313,6 +401,7 @@ def get_current_user_admin_info():
     }, HTTP_STATUS.OK
 
 
+
 # -------------------------------------------------------
 # PINNED REPORTS
 # -------------------------------------------------------
@@ -328,12 +417,14 @@ def handle_pinned_reports():
         return handler.get_pinned_reports(user_id, page, limit)
 
 
+
 @app.route("/pinned-reports/<int:report_id>", methods=["DELETE"])
 def handle_pinned_report(report_id):
     handler = PinnedReportsHandler()
     user_id = request.args.get("user_id", type=int)
     if request.method == "DELETE":
         return handler.unpin_report(user_id, report_id)
+
 
 
 @app.route("/users/<int:user_id>/pinned-reports", methods=["GET"])
@@ -344,16 +435,26 @@ def handle_user_pinned_reports(user_id):
     return handler.get_user_pinned_reports(user_id, page, limit)
 
 
+
 @app.route("/pinned-reports/check/<int:user_id>/<int:report_id>", methods=["GET"])
 def check_pinned_status(user_id, report_id):
     handler = PinnedReportsHandler()
     return handler.check_pinned_status(user_id, report_id)
 
 
+@app.route("/reports/<int:report_id>/pinned-status", methods=["GET"])
+def get_report_pinned_status(report_id):
+    handler = PinnedReportsHandler()
+    user_id = request.args.get("user_id", type=int)
+    return handler.check_pinned_status(user_id, report_id)
+
+
+
 @app.route("/pinned-reports/<int:user_id>/<int:report_id>/details", methods=["GET"])
 def get_pinned_report_detail(user_id, report_id):
     handler = PinnedReportsHandler()
     return handler.get_pinned_report_detail(user_id, report_id)
+
 
 
 # -------------------------------------------------------
@@ -392,6 +493,7 @@ def get_user_reports(user_id):
     return handler.get_reports_by_user(user_id, page, limit)
 
 
+
 # -------------------------------------------------------
 # STATS & ADMIN
 # -------------------------------------------------------
@@ -401,10 +503,12 @@ def get_overview_stats():
     return handler.get_overview_stats()
 
 
+
 @app.route("/stats/department/<string:department>", methods=["GET"])
 def get_department_overview_stats(department):
     handler = ReportsHandler()
     return handler.get_department_stats(department)
+
 
 
 @app.route("/stats/user/<int:user_id>", methods=["GET"])
@@ -413,10 +517,12 @@ def get_user_stats(user_id):
     return handler.get_user_stats(user_id)
 
 
+
 @app.route("/stats/admin/<int:admin_id>", methods=["GET"])
 def get_admin_stats(admin_id):
     handler = AdministratorsHandler()
     return handler.get_admin_stats(admin_id)
+
 
 
 @app.route("/admin/dashboard", methods=["GET"])
@@ -425,12 +531,14 @@ def get_admin_dashboard():
     return handler.get_admin_dashboard()
 
 
+
 @app.route("/admin/reports/pending", methods=["GET"])
 def get_pending_reports():
     handler = ReportsHandler()
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
     return handler.get_pending_reports(page, limit)
+
 
 
 @app.route("/admin/reports/assigned", methods=["GET"])
@@ -442,24 +550,20 @@ def get_assigned_reports():
     return handler.get_assigned_reports(admin_id, page, limit)
 
 
+
 # -------------------------------------------------------
 # SYSTEM HEALTH
 # -------------------------------------------------------
 @app.route("/system/health", methods=["GET"])
 def system_health():
     from datetime import datetime
+
     return {
         "status": "OK",
         "message": "System is running normally",
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "version": "1.0.0",
     }
-
-
-@app.route("/users/<int:user_id>/upgrade-admin", methods=["POST"])
-def upgrade_admin(user_id):
-    handler = UsersHandler()
-    return handler.upgrade_to_admin(user_id, request.json)
 
 
 @app.route("/api/admin/<int:admin_id>/reports", methods=["GET"])

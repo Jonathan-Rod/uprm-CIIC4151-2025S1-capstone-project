@@ -132,6 +132,8 @@ async function request(endpoint: string, method = "GET", body?: any) {
     if (!response.ok) {
       if (response.status === 401)
         throw new Error("Authentication failed - Please log in again");
+      if (response.status === 401)
+        throw new Error("Authentication failed - Please log in again");
       if (response.status === 403) throw new Error("Access forbidden");
       if (response.status === 404) throw new Error("Resource not found");
       if (response.status >= 500) throw new Error("Server error");
@@ -148,7 +150,7 @@ async function request(endpoint: string, method = "GET", body?: any) {
 
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       throw new Error(
-        `Cannot connect to backend at ${API_BASE_URL}. Make sure Flask is running.`
+        `Cannot connect to server at ${url}. Please check if the backend is running.`
       );
     }
 
@@ -265,9 +267,17 @@ export async function validateReport(
   reportId: number,
   data: { admin_id: number }
 ) {
+export async function validateReport(
+  reportId: number,
+  data: { admin_id: number }
+) {
   return request(`/reports/${reportId}/validate`, "POST", data);
 }
 
+export async function resolveReport(
+  reportId: number,
+  data: { admin_id: number }
+) {
 export async function resolveReport(
   reportId: number,
   data: { admin_id: number }
@@ -405,13 +415,15 @@ export async function searchLocations(params: {
   page?: number;
   limit?: number;
 }) {
-  const qs = new URLSearchParams();
-  if (params.latitude) qs.append("latitude", params.latitude.toString());
-  if (params.longitude) qs.append("longitude", params.longitude.toString());
-  if (params.page) qs.append("page", params.page.toString());
-  if (params.limit) qs.append("limit", params.limit.toString());
-
-  return request(`/locations/search?${qs.toString()}`);
+  const searchParams = new URLSearchParams();
+  if (params?.latitude)
+    searchParams.append("latitude", params.latitude.toString());
+  if (params?.longitude)
+    searchParams.append("longitude", params.longitude.toString());
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  const query = searchParams.toString();
+  return request(`/locations/search${query ? `?${query}` : ""}`);
 }
 
 // =============================================================================
@@ -503,6 +515,24 @@ export async function deleteDepartment(name: string) {
   return request(`/departments/${name}`, "DELETE");
 }
 
+export async function getDepartmentAdmin(departmentName: string) {
+  return request(`/departments/${departmentName}/admin`);
+}
+
+export async function assignDepartmentAdmin(
+  departmentName: string,
+  data: { admin_id: number }
+) {
+  return request(`/departments/${departmentName}/admin`, "POST", data);
+}
+
+export async function removeDepartmentAdmin(departmentName: string) {
+  return request(`/departments/${departmentName}/admin`, "DELETE");
+}
+
+// =============================================================================
+// DEPARTMENT MANAGEMENT
+// =============================================================================
 export async function getDepartmentsWithAdminInfo() {
   return request("/departments/with-admin-info");
 }
@@ -581,10 +611,9 @@ export async function getUserPinnedReports(
   page?: number,
   limit?: number
 ) {
-  const creds = await getStoredCredentials();
-  if (!creds) throw new Error("Not authenticated");
-  if (creds.userId !== userId)
-    throw new Error("User ID mismatch");
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+  if (userId !== credentials.userId) throw new Error("User ID mismatch");
 
   const qs = new URLSearchParams();
   if (page) qs.append("page", page.toString());
@@ -661,11 +690,11 @@ export async function getAssignedReports(
   page?: number,
   limit?: number
 ) {
-  const qs = new URLSearchParams();
-  qs.append("admin_id", adminId.toString());
-  if (page) qs.append("page", page.toString());
-  if (limit) qs.append("limit", limit.toString());
-  return request(`/admin/reports/assigned?${qs.toString()}`);
+  const params = new URLSearchParams();
+  params.append("admin_id", adminId.toString());
+  if (page) params.append("page", page.toString());
+  if (limit) params.append("limit", limit.toString());
+  return request(`/admin/reports/assigned?${params.toString()}`);
 }
 
 // =============================================================================
@@ -680,4 +709,108 @@ export async function testConnection() {
     console.error("Connection test failed:", err);
     return false;
   }
+}
+
+// =============================================================================
+// TODO REPORT ACTIONS - MISSING ROUTES IN BACKEND (Later)
+// =============================================================================
+
+// TODO Add/Remove rating (like) to report
+export async function toggleRating(
+  reportId: number
+): Promise<{ rating: number; rated: boolean }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(`/reports/${reportId}/rate`, "POST", {
+    user_id: credentials.userId,
+  });
+}
+
+// TODO Check if user rated the report
+export async function checkReportRated(
+  reportId: number
+): Promise<{ rated: boolean; rating: number }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(
+    `/reports/${reportId}/rating-status?user_id=${credentials.userId}`
+  );
+}
+
+// TODO Get rating count for report
+export async function getReportRating(
+  reportId: number
+): Promise<{ rating: number }> {
+  return request(`/reports/${reportId}/rating`);
+}
+
+// TODO Check if report is pinned by current user
+export async function checkReportPinned(
+  reportId: number
+): Promise<{ pinned: boolean }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(
+    `/reports/${reportId}/pinned-status?user_id=${credentials.userId}`
+  );
+}
+
+// TODO Pin/Unpin report
+export async function togglePinReport(reportId: number, pin: boolean) {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  if (pin) {
+    return request("/pinned-reports", "POST", {
+      user_id: credentials.userId,
+      report_id: reportId,
+    });
+  } else {
+    return unpinReport(credentials.userId, reportId);
+  }
+}
+
+// TODO Edit report (author only)
+export async function editReport(
+  reportId: number,
+  data: {
+    title?: string;
+    description?: string;
+    category?: string;
+  }
+) {
+  return request(`/reports/${reportId}`, "PUT", data);
+}
+
+// TODO Admin status changes
+export async function changeReportStatus(
+  reportId: number,
+  status: string,
+  adminId: number
+) {
+  return request(`/reports/${reportId}/status`, "PUT", {
+    status,
+    admin_id: adminId,
+  });
+}
+
+// TODO Get available status options (for admin)
+export async function getStatusOptions() {
+  return request("/reports/status-options");
+}
+
+
+// TODO Get location details with address
+export async function getLocationDetails(locationId: number): Promise<{
+  id: number;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  city?: string;
+  country?: string;
+}> {
+  return request(`/locations/${locationId}/details`);
 }

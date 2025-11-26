@@ -2,7 +2,8 @@ from dotenv import load_dotenv
 from load import load_db
 
 # Add near the top if not present
-VALID_DEPARTMENTS = ('DTOP', 'LUMA', 'AAA', 'DDS')
+VALID_DEPARTMENTS = ("DTOP", "LUMA", "AAA", "DDS")
+
 
 class UsersDAO:
 
@@ -124,7 +125,12 @@ class UsersDAO:
             self.conn.commit()
             return cur.fetchone()
 
+    # =============================================================================
+    # NEW METHODS FOR USER MANAGEMENT ACTIONS
+    # =============================================================================
+
     def suspend_user(self, user_id):
+        """Suspend a user account"""
         query = """
             UPDATE users
             SET suspended = TRUE
@@ -137,6 +143,7 @@ class UsersDAO:
             return cur.fetchone()
 
     def unsuspend_user(self, user_id):
+        """Unsuspend a user account"""
         query = """
             UPDATE users
             SET suspended = FALSE
@@ -149,6 +156,7 @@ class UsersDAO:
             return cur.fetchone()
 
     def pin_user(self, user_id):
+        """Pin a user (mark as important)"""
         query = """
             UPDATE users
             SET pinned = TRUE
@@ -161,6 +169,7 @@ class UsersDAO:
             return cur.fetchone()
 
     def unpin_user(self, user_id):
+        """Unpin a user"""
         query = """
             UPDATE users
             SET pinned = FALSE
@@ -172,12 +181,13 @@ class UsersDAO:
             self.conn.commit()
             return cur.fetchone()
 
-    def get_user_stats(self, user_id):  # TODO add last date report
+    def get_user_stats(self, user_id):
+        """Get detailed statistics for a user"""
         query = """
             SELECT
                 u.id, u.email, u.created_at,
-                COALESCE(u.total_reports, 0)                 AS total_reports,        -- lifetime (immutable)
-                COALESCE(r.current_reports, 0)               AS current_reports,      -- live count in reports table
+                COALESCE(u.total_reports, 0)                 AS total_reports,
+                COALESCE(r.current_reports, 0)               AS current_reports,
                 COALESCE(r.open_reports, 0)                  AS open_reports,
                 COALESCE(r.resolved_reports, 0)              AS resolved_reports,
                 COALESCE(r.in_progress_reports, 0)           AS in_progress_reports,
@@ -202,8 +212,8 @@ class UsersDAO:
                 FROM pinned_reports
                 GROUP BY user_id
             ) pr ON pr.user_id = u.id
-            WHERE u.id = %s;
-            """
+            WHERE u.id = %s
+        """
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id,))
             result = cur.fetchone()
@@ -215,8 +225,8 @@ class UsersDAO:
                 "user_id": result[0],
                 "email": result[1],
                 "created_at": result[2],
-                "total_reports": result[3],           # ← lifetime “Filed”
-                "current_reports": result[4],         # optional: current live count in reports
+                "total_reports": result[3],
+                "current_reports": result[4],
                 "open_reports": result[5],
                 "resolved_reports": result[6],
                 "in_progress_reports": result[7],
@@ -224,7 +234,6 @@ class UsersDAO:
                 "avg_rating_given": float(result[9]) if result[9] else 0,
                 "last_report_date": result[10],
             }
-
 
     def validate_credentials(self, email, password):
         """Validate user credentials without returning password"""
@@ -236,7 +245,7 @@ class UsersDAO:
         with self.conn.cursor() as cur:
             cur.execute(query, (email, password))
             return cur.fetchone()
-        
+
     def redeem_admin_code_and_promote(self, user_id: int, code: str) -> dict:
         """
         Minimal flow:
@@ -258,7 +267,9 @@ class UsersDAO:
                 already_admin = bool(row[0])
 
                 # Get department from your manually-inserted code
-                cur.execute("SELECT department FROM admin_codes WHERE code = %s", (code,))
+                cur.execute(
+                    "SELECT department FROM admin_codes WHERE code = %s", (code,)
+                )
                 row = cur.fetchone()
                 if not row:
                     raise ValueError("Invalid code")
@@ -282,7 +293,11 @@ class UsersDAO:
                 # Flip users.admin to TRUE
                 cur.execute("UPDATE users SET admin = TRUE WHERE id = %s", (user_id,))
 
-        return {"success": True, "department": department, "already_admin": already_admin}
+        return {
+            "success": True,
+            "department": department,
+            "already_admin": already_admin,
+        }
 
     def close(self):
         if self.conn:
