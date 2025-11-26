@@ -32,7 +32,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // Handle both response formats from backend
       if (response.success || response.user) {
         // Save credentials using the existing function signature
-        await saveCredentials(response.user.id, email, password);
+        await saveCredentials(response.user.id, email, password, response.user.admin, response.user.suspended);
 
         onSuccess();
       } else {
