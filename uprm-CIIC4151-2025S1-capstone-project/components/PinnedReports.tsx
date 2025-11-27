@@ -70,6 +70,7 @@ export default function PinnedReportsCard({
           </View>
         ) : (
           <>
+            {console.log("Pinned reports data:", pinnedReports)}
             {pinnedReports.slice(0, 5).map((report) => (
               <ReportCard
                 key={report.id}

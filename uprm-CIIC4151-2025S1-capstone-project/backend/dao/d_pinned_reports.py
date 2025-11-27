@@ -39,7 +39,7 @@ class PinnedReportsDAO:
 
     def get_pinned_reports_by_user(self, user_id, limit, offset):
         query = """
-            SELECT pr.*, r.title, r.description, r.status, r.category
+            SELECT pr.*, r.title, r.description, r.status, r.category, r.created_at
             FROM pinned_reports pr
             JOIN reports r ON pr.report_id = r.id
             WHERE pr.user_id = %s
@@ -58,7 +58,7 @@ class PinnedReportsDAO:
 
     def get_all_pinned_reports(self, limit, offset):
         query = """
-            SELECT pr.*, r.title, r.description, r.status, r.category
+            SELECT pr.*, r.title, r.description, r.status, r.category, r.created_at
             FROM pinned_reports pr
             JOIN reports r ON pr.report_id = r.id
             ORDER BY pr.pinned_at DESC

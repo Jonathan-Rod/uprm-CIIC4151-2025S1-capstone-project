@@ -71,7 +71,11 @@ export default function HomeScreen() {
     loadHomeData();
   }, []);
 
-  const handleReportPress = (reportId: number) => {
+  const handleReportPress = (reportId?: number) => {
+    if (reportId == null) {
+      console.warn("handleReportPress called with invalid reportId:", reportId);
+      return;
+    }
     router.push({
       pathname: "/(modals)/report-view",
       params: { id: reportId.toString() },
