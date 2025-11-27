@@ -7,32 +7,26 @@ class LocationsHandler:
 
     def map_to_dict(self, location):
         """Map database result to dictionary"""
-        if len(location) >= 3:  # Basic location fields
-            return {
-                "id": location[0],
-                "latitude": float(location[1]) if location[1] is not None else None,
-                "longitude": float(location[2]) if location[2] is not None else None,
-            }
-        else:
-            return {
-                "id": location[0],
-                "latitude": float(location[1]) if location[1] is not None else None,
-                "longitude": float(location[2]) if location[2] is not None else None,
-            }
+        return {
+            "id": location[0],
+            "city": location[1] if location[1] is not None else None,
+            "latitude": float(location[2]) if location[2] is not None else None,
+            "longitude": float(location[3]) if location[3] is not None else None,
+        }
 
     def map_to_dict_with_reports(self, location):
         """Map location with report count to dictionary"""
         base_dict = self.map_to_dict(location)
-        if len(location) > 3:  # Includes report_count
-            base_dict["report_count"] = location[3]
+        if len(location) > 4:  # Includes report_count
+            base_dict["report_count"] = location[4]
         return base_dict
 
     def map_to_dict_with_distance(self, location):
         """Map location with distance to dictionary"""
         base_dict = self.map_to_dict(location)
-        if len(location) > 3:  # Includes distance
+        if len(location) > 4:  # Includes distance
             base_dict["distance_km"] = (
-                float(location[3]) if location[3] is not None else None
+                float(location[4]) if location[4] is not None else None
             )
         return base_dict
 

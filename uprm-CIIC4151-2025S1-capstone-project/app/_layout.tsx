@@ -183,6 +183,10 @@ export default function RootLayout() {
               name="(modals)/update-profile"
               options={{ presentation: "modal", title: "Update Profile" }}
             />
+            <Stack.Screen
+              name="(modals)/view-map"
+              options={{ presentation: "modal", title: "View Map" }}
+            />
           </Stack>
           <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         </ThemeProvider>

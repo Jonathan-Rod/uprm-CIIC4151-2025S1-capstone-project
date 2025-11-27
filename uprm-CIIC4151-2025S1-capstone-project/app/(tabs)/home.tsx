@@ -97,7 +97,7 @@ export default function HomeScreen() {
   };
 
   const handleViewMap = () => {
-    // TODO router.push("/(tabs)/map");
+    router.push("/(modals)/view-map");
   };
 
   const handleViewAllPinned = () => {
