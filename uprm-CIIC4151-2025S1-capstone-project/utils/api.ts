@@ -19,7 +19,7 @@ const getApiBaseUrl = () => {
 
     // iOS (Expo Go on physical device)
     if (Platform.OS === "ios") {
-      const iosUrl = "http://192.168.4.49:5000"; 
+      const iosUrl = "http://192.168.4.49:5000";
       console.log("Using iOS URL:", iosUrl);
       return iosUrl;
     }
@@ -30,8 +30,8 @@ const getApiBaseUrl = () => {
     return webUrl;
   }
 
-  // Production
-  return "https://tu-api-real.com";
+  // Para producción
+  return "https://reporte-ciudadano-15eb46ea2557.herokuapp.com";
 };
 
 export const API_BASE_URL = getApiBaseUrl();

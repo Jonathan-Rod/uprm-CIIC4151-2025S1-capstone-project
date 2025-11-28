@@ -4,6 +4,7 @@ import { Badge, Card, Text, Chip } from "react-native-paper";
 import type { ReportData } from "@/types/interfaces";
 import { ReportStatus, ReportCategory } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { buildImageUrl } from "@/utils/api";
 
 interface ReportCardProps {
@@ -172,6 +173,7 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
             textStyle={styles.categoryText}
             compact
           >
+            {/* {getCategoryIcon(report.category)}{" "} */}
             {getCategoryLabel(report.category)}
           </Chip>
           {/* If you want to show the report ID, uncomment: */}
@@ -183,8 +185,14 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
         {/* Metadata */}
         <View style={styles.metadata}>
           <View style={styles.metaItem}>
+            <MaterialCommunityIcons
+              name="calendar-plus"
+              size={14}
+              color={colors.textMuted}
+              style={styles.metaIcon}
+            />
             <Text variant="bodySmall" style={styles.metaLabel}>
-              Created:
+              Created at:
             </Text>
             <Text variant="bodySmall" style={styles.metaValue}>
               {formatDate(report.created_at)}
@@ -193,8 +201,14 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.resolved_at && (
             <View style={styles.metaItem}>
+              <MaterialCommunityIcons
+                name="calendar-check"
+                size={14}
+                color={colors.success}
+                style={styles.metaIcon}
+              />
               <Text variant="bodySmall" style={styles.metaLabel}>
-                Resolved:
+                Resolved at:
               </Text>
               <Text
                 variant="bodySmall"
@@ -207,6 +221,12 @@ export default function ReportCard({ report, onPress }: ReportCardProps) {
 
           {report.rating && (
             <View style={styles.metaItem}>
+              <MaterialCommunityIcons
+                name="thumb-up-outline"
+                size={14}
+                color={colors.warning}
+                style={styles.metaIcon}
+              />
               <Text variant="bodySmall" style={styles.metaLabel}>
                 Rating:
               </Text>
@@ -280,6 +300,9 @@ const createStyles = (colors: any) =>
     metaItem: {
       flexDirection: "row",
       gap: 8,
+    },
+    metaIcon: {
+      marginRight: 4,
     },
     metaLabel: {
       fontWeight: "600",
