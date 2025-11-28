@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { StyleSheet, View, ScrollView, Alert } from "react-native";
 import { Button, Text, TextInput, Divider } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getStoredCredentials, saveCredentials } from "@/utils/auth";
-import { updateUser } from "@/utils/api";
+import { updateUser, upgradeToAdmin } from "@/utils/api";
 import { useAppColors } from "@/hooks/useAppColors";
 
 export default function UpdateProfileModal() {
@@ -17,6 +17,7 @@ export default function UpdateProfileModal() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+    adminCode: "", // <- NEW
   });
   const [errors, setErrors] = useState({
     email: "",
@@ -26,7 +27,7 @@ export default function UpdateProfileModal() {
   });
 
   // Load user data when component mounts
-  useState(() => {
+  useEffect(() => {
     const loadUserData = async () => {
       const credentials = await getStoredCredentials();
       if (credentials) {
@@ -37,7 +38,7 @@ export default function UpdateProfileModal() {
       }
     };
     loadUserData();
-  });
+  }, []);
 
   const validateForm = () => {
     const newErrors = {
@@ -138,6 +139,45 @@ export default function UpdateProfileModal() {
     }
   };
 
+  const handleUpgradeToAdmin = async () => {
+    try {
+      if (!formData.adminCode?.trim()) {
+        Alert.alert("Missing Code", "Please enter an admin code.");
+        return;
+      }
+
+      setLoading(true);
+      const credentials = await getStoredCredentials();
+      if (!credentials) {
+        Alert.alert("Error", "You must be logged in to use an admin code.");
+        return;
+      }
+
+      const res = await upgradeToAdmin(
+        credentials.userId,
+        formData.adminCode.trim()
+      );
+
+      if (res?.success) {
+        Alert.alert(
+          "Success",
+          res.department
+            ? `You have been upgraded to admin in ${res.department}.`
+            : "You have been upgraded to admin."
+        );
+        // Optionally reset the code box
+        setFormData((prev) => ({ ...prev, adminCode: "" }));
+      } else {
+        Alert.alert("Invalid Code", res?.error_msg || "Code not recognized.");
+      }
+    } catch (err: any) {
+      console.error("Upgrade admin error:", err);
+      Alert.alert("Error", err.message || "Failed to verify admin code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -158,11 +198,6 @@ export default function UpdateProfileModal() {
           <Text variant="headlineMedium" style={styles.title}>
             Update Profile
           </Text>
-
-          {/* <Text variant="bodyMedium" style={styles.introText}>
-            Manage your account information and security settings. Keep your
-            profile up to date to ensure the best experience.
-          </Text> */}
 
           {/* Email Section */}
           <View style={[styles.section, { borderLeftColor: colors.primary }]}>
@@ -265,6 +300,44 @@ export default function UpdateProfileModal() {
             ) : null}
           </View>
 
+          {/* Admin Upgrade Section */}
+          <View style={[styles.section, { borderLeftColor: colors.warning }]}>
+            <Text
+              variant="titleSmall"
+              style={[styles.sectionTitle, { color: colors.warning }]}
+            >
+              Admin Code Upgrade
+            </Text>
+            <Text variant="bodyMedium" style={styles.sectionText}>
+              If you were given an administrator access code, enter it below to
+              upgrade your account.
+            </Text>
+
+            <TextInput
+              label="Admin Code"
+              value={formData.adminCode}
+              onChangeText={(value) => handleInputChange("adminCode", value)}
+              mode="outlined"
+              disabled={loading}
+              style={styles.input}
+              autoCapitalize="none"
+              placeholder="Enter admin code"
+              outlineColor={colors.input.border}
+              activeOutlineColor={colors.input.borderFocused}
+              textColor={colors.input.text}
+            />
+
+            <Button
+              mode="contained"
+              style={styles.actionButton}
+              disabled={loading || !formData.adminCode?.trim()}
+              onPress={handleUpgradeToAdmin}
+              textColor={colors.button.text}
+            >
+              Verify & Upgrade
+            </Button>
+          </View>
+
           <Divider style={styles.divider} />
 
           {/* Security Tips */}
@@ -306,18 +379,6 @@ export default function UpdateProfileModal() {
             </Button>
           </View>
         </ScrollView>
-
-        {/* <View style={styles.buttonContainer}>
-          <Button
-            mode="contained"
-            onPress={() => router.back()}
-            style={styles.backButton}
-            icon="arrow-left"
-            textColor={colors.button.text}
-          >
-            Back to Settings
-          </Button>
-        </View> */}
       </ThemedView>
     </SafeAreaView>
   );

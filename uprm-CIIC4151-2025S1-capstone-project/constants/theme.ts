@@ -140,7 +140,13 @@ const extendedColors = {
     traffic_signal: "#EF4444", // Red
     road_damage: "#F97316", // Orange
     sanitation: "#10B981", // Emerald
-    other: "#6B7280", // Gray
+    flooding: "#4FC3F7",
+    water_outage: "#29B6F6",
+    wandering_waste: "#8D6E63",
+    electrical_hazard: "#FF8A65",
+    sinkhole: "#BA68C8",
+    fallen_tree: "#81C784",
+    pipe_leak: "#26A69A",
   },
 
   // Department colors - Enhanced contrast
@@ -284,7 +290,13 @@ export const Colors = {
       traffic_signal: extendedColors.reportCategory.traffic_signal,
       road_damage: extendedColors.reportCategory.road_damage,
       sanitation: extendedColors.reportCategory.sanitation,
-      other: extendedColors.reportCategory.other,
+      flooding: extendedColors.reportCategory.flooding,
+      water_outage: extendedColors.reportCategory.water_outage,
+      wandering_waste: extendedColors.reportCategory.wandering_waste,
+      electrical_hazard: extendedColors.reportCategory.electrical_hazard,
+      sinkhole: extendedColors.reportCategory.sinkhole,
+      fallen_tree: extendedColors.reportCategory.fallen_tree,
+      pipe_leak: extendedColors.reportCategory.pipe_leak,
     },
   },
   dark: {
@@ -417,7 +429,6 @@ export const Colors = {
       traffic_signal: extendedColors.error[400],
       road_damage: "#FB923C", // Orange in dark mode
       sanitation: extendedColors.success[400],
-      other: extendedColors.neutral[400],
     },
   },
 } as const;

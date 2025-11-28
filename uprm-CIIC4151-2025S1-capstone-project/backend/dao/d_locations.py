@@ -173,6 +173,49 @@ class LocationsDAO:
             )
             return cur.fetchall()
 
+    # =============================================================================
+    # NEW METHOD FOR LOCATION DETAILS
+    # =============================================================================
+
+    def get_location_details(self, location_id):
+        """Get location details with address information"""
+        # First get the basic location data
+        query = "SELECT * FROM location WHERE id = %s"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (location_id,))
+            location = cur.fetchone()
+
+            if not location:
+                return None
+
+            # For now, return mock address data
+            # In a real implementation, you would:
+            # 1. Have address columns in the location table, OR
+            # 2. Use a geocoding service (Google Maps, OpenStreetMap, etc.)
+            # 3. Cache the results in your database
+
+            return (
+                location[0],  # id
+                location[1],  # latitude
+                location[2],  # longitude
+                self._reverse_geocode(location[1], location[2]),  # address
+                "San Juan",  # city
+                "Puerto Rico",  # country
+            )
+
+    def _reverse_geocode(self, latitude, longitude):
+        """
+        Mock reverse geocoding function.
+        In a real implementation, you would call a geocoding API here.
+        """
+        # This is a simple mock - in reality you'd use:
+        # - Google Maps Geocoding API
+        # - OpenStreetMap Nominatim
+        # - Another geocoding service
+
+        # For now, return a formatted address based on coordinates
+        return f"Near {latitude:.6f}, {longitude:.6f}"
+
     def close(self):
         if self.conn:
             self.conn.close()

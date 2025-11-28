@@ -1,8 +1,6 @@
 -- Drop tables in correct order to handle foreign key dependencies
 DROP TABLE IF EXISTS pinned_reports;
 
-DROP TABLE IF EXISTS civilians;
-
 DROP TABLE IF EXISTS department_admins;
 
 DROP TABLE IF EXISTS reports;
@@ -15,6 +13,8 @@ DROP TABLE IF EXISTS verifications;
 
 DROP TABLE IF EXISTS users;
 
+DROP TABLE IF EXISTS admin_codes;
+
 -- Users table with suspended and pinned attributes
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -23,10 +23,11 @@ CREATE TABLE users (
     ADMIN BOOLEAN DEFAULT FALSE,
     suspended BOOLEAN DEFAULT FALSE,
     pinned BOOLEAN DEFAULT FALSE,
+    total_reports INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Ignore for now (email verification)
+-- Email verification table
 CREATE TABLE verifications (
     id SERIAL PRIMARY KEY,
     email VARCHAR(50) UNIQUE NOT NULL,
@@ -47,7 +48,10 @@ CREATE TABLE location (
     id SERIAL PRIMARY KEY,
     city VARCHAR(100),
     latitude DECIMAL(9, 6) NOT NULL,
-    longitude DECIMAL(9, 6) NOT NULL
+    longitude DECIMAL(9, 6) NOT NULL,
+    address TEXT,
+    city VARCHAR(100),
+    country VARCHAR(100)
 );
 
 -- Reports table with category
@@ -60,7 +64,8 @@ CREATE TABLE reports (
             'resolved',
             'denied',
             'in_progress',
-            'open'
+            'open',
+            'closed'
         )
     ) DEFAULT 'open',
     category VARCHAR(50) CHECK (
@@ -70,6 +75,13 @@ CREATE TABLE reports (
             'traffic_signal',
             'road_damage',
             'sanitation',
+            'flooding',
+            'water_outage',
+            'wandering_waste',
+            'electrical_hazard',
+            'sinkhole',
+            'fallen_tree',
+            'pipe_leak',
             'other'
         )
     ) DEFAULT 'other',
@@ -79,7 +91,7 @@ CREATE TABLE reports (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP,
     location INTEGER REFERENCES location (id),
-    image_url TEXT,
+    image_url VARCHAR,
     rating INTEGER CHECK (
         rating >= 1
         AND rating <= 5
@@ -102,6 +114,14 @@ CREATE TABLE pinned_reports (
     PRIMARY KEY (user_id, report_id)
 );
 
+-- Admin codes for user promotion
+CREATE TABLE admin_codes (
+    code VARCHAR PRIMARY KEY,
+    department VARCHAR NOT NULL CHECK (
+        department IN ('DTOP', 'LUMA', 'AAA', 'DDS')
+    )
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users (email);
 
@@ -121,6 +141,14 @@ CREATE INDEX idx_pinned_reports_user_id ON pinned_reports (user_id);
 
 CREATE INDEX idx_pinned_reports_report_id ON pinned_reports (report_id);
 
+-- Insert admin codes for user promotion
+INSERT INTO
+    admin_codes (code, department)
+VALUES ('DTOP123', 'DTOP'),
+    ('LUMA456', 'LUMA'),
+    ('AAA789', 'AAA'),
+    ('DDS012', 'DDS');
+
 -- Insert 50 users from Puerto Rico
 INSERT INTO
     users (
@@ -132,350 +160,350 @@ INSERT INTO
     )
 VALUES (
         'juan.martinez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'maria.garcia@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'carlos.rodriguez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'ana.hernandez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'jose.lopez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'laura.gonzalez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'miguel.perez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'isabel.torres@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'rafael.diaz@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'elena.ramirez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'pedro.cruz@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'carmen.reyes@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'antonio.morales@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'patricia.ortiz@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'roberto.vargas@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'sandra.mendoza@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'fernando.guzman@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'gloria.santos@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'ricardo.castro@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'vanessa.rivera@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'oscar.mendez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'adriana.medina@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'manuel.aguilar@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'luz.figueroa@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'victor.rosario@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'diana.santiago@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'alejandro.delgado@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'monica.nazario@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'eduardo.vega@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'irene.colon@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'raul.serrano@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'teresa.miranda@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'hugo.rojas@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'nancy.suarez@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'gilberto.acosta@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'rebeca.padilla@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'ernesto.maldonado@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'olga.cordero@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'arturo.camacho@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'lourdes.burgos@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'gerardo.quiles@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'margarita.pabon@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'sergio.zayas@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'celeste.betancourt@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'felipe.carrion@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'roxana.arroyo@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'rodolfo.valentin@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'yvonne.caban@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'esteban.collazo@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE
     ),
     (
         'noemi.negron@example.com',
-        '$2b$10$examplehashedpassword',
+        'password123',
         FALSE,
         FALSE,
         FALSE

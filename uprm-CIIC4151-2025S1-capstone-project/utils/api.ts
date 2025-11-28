@@ -1,27 +1,30 @@
 import { Platform } from "react-native";
 import type { ReportFormData } from "@/types/interfaces";
 import { getStoredCredentials } from "@/utils/auth";
+import type { AdminInfo } from "@/types/interfaces";
 
-// Configuración de URL base para diferentes plataformas
+// =============================================================================
+// BASE URL (per platform)
+// =============================================================================
 const getApiBaseUrl = () => {
   if (__DEV__) {
     console.log("Platform:", Platform.OS);
 
-    // Para emulador de Android - usa 10.0.2.2 para localhost del host
+    // Android emulator -> host machine
     if (Platform.OS === "android") {
       const androidUrl = "http://10.0.2.2:5000";
       console.log("Using Android URL:", androidUrl);
       return androidUrl;
     }
 
-    // Para iOS emulador
+    // iOS (Expo Go on physical device)
     if (Platform.OS === "ios") {
       const iosUrl = "http://192.168.4.49:5000";
       console.log("Using iOS URL:", iosUrl);
       return iosUrl;
     }
 
-    // Para web
+    // Web
     const webUrl = "http://localhost:5000";
     console.log("Using Web URL:", webUrl);
     return webUrl;
@@ -33,6 +36,80 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// =============================================================================
+// IMAGE UPLOAD (NEW)
+// =============================================================================
+
+/**
+ * Upload a local file:/// URI from expo-image-picker to Flask /upload.
+ * Returns a relative URL like "/uploads/<uuid>.jpg".
+ */
+export async function uploadImageFromUri(uri: string): Promise<string> {
+  const formData = new FormData();
+
+  const filename = uri.split("/").pop() || "image.jpg";
+  const extMatch = /\.(\w+)$/.exec(filename);
+  const ext = extMatch?.[1]?.toLowerCase();
+
+  const mimeType =
+    ext === "png"
+      ? "image/png"
+      : ext === "webp"
+      ? "image/webp"
+      : "image/jpeg";
+
+  formData.append("image", {
+    uri,
+    name: filename,
+    type: mimeType,
+  } as any);
+
+  const uploadUrl = `${API_BASE_URL}/upload`;
+
+  try {
+    console.log("Uploading image:", uri);
+
+    const response = await fetch(uploadUrl, {
+      method: "POST",
+      body: formData,
+      // ⚠️ DO NOT set Content-Type manually.
+    });
+
+    console.log("Upload status:", response.status);
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Upload failed:", text);
+      throw new Error(`Upload failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Upload JSON:", data);
+
+    if (!data.url) {
+      throw new Error("Upload returned no URL");
+    }
+
+    return data.url; // e.g. "/uploads/<uuid>.jpg"
+  } catch (err) {
+    console.error("uploadImageFromUri error:", err);
+    throw err;
+  }
+}
+
+/**
+ * Convert backend relative paths into full URLs.
+ * Useful for <Image source={{ uri: buildImageUrl(report.image_url) }} />
+ */
+export function buildImageUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${API_BASE_URL}${path}`;
+}
+
+// =============================================================================
+// REQUEST WRAPPER
+// =============================================================================
 async function request(endpoint: string, method = "GET", body?: any) {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers: Record<string, string> = {
@@ -47,35 +124,29 @@ async function request(endpoint: string, method = "GET", body?: any) {
 
   try {
     console.log(`API Request: ${method} ${url}`);
-    console.log("Request data:", body);
+    if (body) console.log("Request Body:", body);
 
     const response = await fetch(url, options);
-
-    console.log(`Response Status: ${response.status}`);
+    console.log("Response Status:", response.status);
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401)
         throw new Error("Authentication failed - Please log in again");
-      } else if (response.status === 403) {
-        throw new Error("Access forbidden");
-      } else if (response.status === 404) {
-        throw new Error("Resource not found");
-      } else if (response.status >= 500) {
-        throw new Error("Server error");
-      } else {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
+      if (response.status === 401)
+        throw new Error("Authentication failed - Please log in again");
+      if (response.status === 403) throw new Error("Access forbidden");
+      if (response.status === 404) throw new Error("Resource not found");
+      if (response.status >= 500) throw new Error("Server error");
+      throw new Error(`API error: ${response.status}`);
     }
 
-    if (response.status === 204) {
-      return null;
-    }
+    if (response.status === 204) return null;
 
-    const data = await response.json();
-    console.log(`API Response Data:`, data);
-    return data;
-  } catch (error) {
-    console.error(`API Error for ${method} ${endpoint}:`, error);
+    const json = await response.json();
+    console.log("API Response:", json);
+    return json;
+  } catch (error: any) {
+    console.error(`API Error (${method} ${endpoint}):`, error);
 
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       throw new Error(
@@ -88,17 +159,12 @@ async function request(endpoint: string, method = "GET", body?: any) {
 }
 
 // =============================================================================
-// AUTHENTICATION
+// AUTH
 // =============================================================================
-
 export async function login(data: { email: string; password: string }) {
   const result = await request("/login", "POST", data);
-
-  if (result && result.success) {
-    return result;
-  } else {
-    throw new Error(result?.error_msg || "Login failed");
-  }
+  if (result && result.success) return result;
+  throw new Error(result?.error_msg || "Login failed");
 }
 
 export async function logout() {
@@ -106,20 +172,18 @@ export async function logout() {
 }
 
 export async function getSystemHealth() {
-  return request("/system/health", "GET");
+  return request("/system/health");
 }
 
 // =============================================================================
 // USERS
 // =============================================================================
-
 export async function getUsers(page?: number, limit?: number) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
 
-  const query = params.toString();
-  return request(`/users${query ? `?${query}` : ""}`);
+  return request(`/users?${params.toString()}`);
 }
 
 export async function getUser(id: number) {
@@ -132,12 +196,8 @@ export async function createUser(data: {
   admin: boolean;
 }) {
   const result = await request("/users", "POST", data);
-
-  if (result && result.id) {
-    return result;
-  } else {
-    throw new Error(result?.error_msg || "User creation failed");
-  }
+  if (result && result.id) return result;
+  throw new Error(result?.error_msg || "User creation failed");
 }
 
 export async function updateUser(id: number, data: any) {
@@ -149,36 +209,29 @@ export async function deleteUser(id: number) {
 }
 
 // =============================================================================
-// USER MANAGEMENT
+// USER MGMT
 // =============================================================================
-
-export async function suspendUser(id: number) {
-  return request(`/users/${id}/suspend`, "POST");
-}
-
-export async function unsuspendUser(id: number) {
-  return request(`/users/${id}/unsuspend`, "POST");
-}
-
-export async function pinUser(id: number) {
-  return request(`/users/${id}/pin`, "POST");
-}
-
-export async function unpinUser(id: number) {
-  return request(`/users/${id}/unpin`, "POST");
+export async function upgradeToAdmin(userId: number, code: string) {
+  return request(`/users/${userId}/upgrade-admin`, "POST", { code });
 }
 
 // =============================================================================
 // REPORTS
 // =============================================================================
-
-export async function getReports(page?: number, limit?: number) {
+export async function getReports(
+  page?: number,
+  limit?: number,
+  sort?: "asc" | "desc"
+) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
+  if (sort) params.append("sort", sort);
 
-  const query = params.toString();
-  return request(`/reports${query ? `?${query}` : ""}`);
+  const creds = await getStoredCredentials();
+  if (creds) params.append("admin_id", creds.userId.toString());
+
+  return request(`/reports?${params.toString()}`);
 }
 
 export async function getReport(id: number) {
@@ -186,18 +239,17 @@ export async function getReport(id: number) {
 }
 
 export async function createReport(data: ReportFormData) {
-  // Get user credentials and add user_id to the request
-  const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("User not authenticated");
 
-  const reportData = {
+  const payload = {
     ...data,
-    user_id: credentials.userId, // Add user_id for created_by field
+    user_id: creds.userId,
+    image_url: data.image_url?.trim() || null,
+  location_id: data.location_id ?? null,
   };
 
-  return request("/reports", "POST", reportData);
+  return request("/reports", "POST", payload);
 }
 
 export async function updateReport(id: number, data: any) {
@@ -211,7 +263,6 @@ export async function deleteReport(id: number) {
 // =============================================================================
 // REPORT ACTIONS
 // =============================================================================
-
 export async function validateReport(
   reportId: number,
   data: { admin_id: number }
@@ -226,23 +277,34 @@ export async function resolveReport(
   return request(`/reports/${reportId}/resolve`, "POST", data);
 }
 
-export async function rateReport(reportId: number, data: { rating: number }) {
+export async function rateReport(
+  reportId: number,
+  data: { rating: number }
+) {
   return request(`/reports/${reportId}/rate`, "POST", data);
 }
 
 // =============================================================================
-// REPORT SEARCH & FILTER
+// SEARCH & FILTER
 // =============================================================================
-
 export async function searchReports(
   query: string,
+  status?: string,
+  category?: string,
   page?: number,
-  limit?: number
+  limit?: number,
+  sort?: "asc" | "desc"
 ) {
   const params = new URLSearchParams();
-  params.append("q", query);
+  if (query) params.append("q", query);
+  if (status) params.append("status", status);
+  if (category) params.append("category", category);
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
+  if (sort) params.append("sort", sort);
+
+  const creds = await getStoredCredentials();
+  if (creds) params.append("admin_id", creds.userId.toString());
 
   return request(`/reports/search?${params.toString()}`);
 }
@@ -251,13 +313,18 @@ export async function filterReports(
   status?: string,
   category?: string,
   page?: number,
-  limit?: number
+  limit?: number,
+  sort?: "asc" | "desc"
 ) {
   const params = new URLSearchParams();
   if (status) params.append("status", status);
   if (category) params.append("category", category);
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
+  if (sort) params.append("sort", sort);
+
+  const creds = await getStoredCredentials();
+  if (creds) params.append("admin_id", creds.userId.toString());
 
   return request(`/reports/filter?${params.toString()}`);
 }
@@ -277,14 +344,12 @@ export async function getUserReports(
 // =============================================================================
 // LOCATIONS
 // =============================================================================
-
 export async function getLocations(page?: number, limit?: number) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
 
-  const query = params.toString();
-  return request(`/locations${query ? `?${query}` : ""}`);
+  return request(`/locations?${params.toString()}`);
 }
 
 export async function getLocation(id: number) {
@@ -307,37 +372,36 @@ export async function deleteLocation(id: number) {
 }
 
 // =============================================================================
-// LOCATION SEARCH & ANALYTICS
+// LOCATION SEARCH
 // =============================================================================
-
 export async function getLocationsNearby(params: {
   latitude: number;
   longitude: number;
   radius?: number;
   limit?: number;
 }) {
-  const searchParams = new URLSearchParams();
-  searchParams.append("latitude", params.latitude.toString());
-  searchParams.append("longitude", params.longitude.toString());
-  if (params.radius) searchParams.append("radius", params.radius.toString());
-  if (params.limit) searchParams.append("limit", params.limit.toString());
+  const qs = new URLSearchParams();
+  qs.append("latitude", params.latitude.toString());
+  qs.append("longitude", params.longitude.toString());
+  if (params.radius) qs.append("radius", params.radius.toString());
+  if (params.limit) qs.append("limit", params.limit.toString());
 
-  return request(`/locations/nearby?${searchParams.toString()}`);
+  return request(`/locations/nearby?${qs.toString()}`);
 }
 
 export async function getLocationsWithReports(page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
 
-  return request(`/locations/with-reports?${params.toString()}`);
+  return request(`/locations/with-reports?${qs.toString()}`);
 }
 
 export async function getLocationStats() {
   return request("/locations/stats");
 }
 
-export async function searchLocations(params?: {
+export async function searchLocations(params: {
   latitude?: number;
   longitude?: number;
   page?: number;
@@ -350,7 +414,6 @@ export async function searchLocations(params?: {
     searchParams.append("longitude", params.longitude.toString());
   if (params?.page) searchParams.append("page", params.page.toString());
   if (params?.limit) searchParams.append("limit", params.limit.toString());
-
   const query = searchParams.toString();
   return request(`/locations/search${query ? `?${query}` : ""}`);
 }
@@ -358,14 +421,11 @@ export async function searchLocations(params?: {
 // =============================================================================
 // ADMINISTRATORS
 // =============================================================================
-
 export async function getAdministrators(page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-
-  const query = params.toString();
-  return request(`/administrators${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+  return request(`/administrators?${qs.toString()}`);
 }
 
 export async function getAdministrator(id: number) {
@@ -387,10 +447,13 @@ export async function deleteAdministrator(id: number) {
   return request(`/administrators/${id}`, "DELETE");
 }
 
-// =============================================================================
-// ADMINISTRATOR MANAGEMENT
-// =============================================================================
+export async function getReportsForAdmin(adminId: number) {
+  return request(`/api/admin/${adminId}/reports`);
+}
 
+// =============================================================================
+// ADMIN MGMT
+// =============================================================================
 export async function getAdministratorsByDepartment(department: string) {
   return request(`/administrators/department/${department}`);
 }
@@ -403,22 +466,24 @@ export async function getAvailableAdministrators() {
   return request("/administrators/available");
 }
 
-export async function checkUserIsAdministrator(userId: number) {
-  return request(`/administrators/check/${userId}`);
+// 🔹 Uses /me/admin?user_id=...
+export async function checkUserIsAdministrator(
+  userId: number
+): Promise<AdminInfo> {
+  const qs = new URLSearchParams();
+  qs.append("user_id", userId.toString());
+  return request(`/me/admin?${qs.toString()}`);
 }
 
 export async function getAdministratorPerformanceReport(days?: number) {
-  const params = new URLSearchParams();
-  if (days) params.append("days", days.toString());
-
-  const query = params.toString();
-  return request(`/administrators/performance${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (days) qs.append("days", days.toString());
+  return request(`/administrators/performance?${qs.toString()}`);
 }
 
 // =============================================================================
 // DEPARTMENTS
 // =============================================================================
-
 export async function getDepartments() {
   return request("/departments");
 }
@@ -460,7 +525,6 @@ export async function removeDepartmentAdmin(departmentName: string) {
 // =============================================================================
 // DEPARTMENT MANAGEMENT
 // =============================================================================
-
 export async function getDepartmentsWithAdminInfo() {
   return request("/departments/with-admin-info");
 }
@@ -489,59 +553,49 @@ export async function checkAdminAssignment(
 }
 
 // =============================================================================
-// PINNED REPORTS - ALL NEED USER CREDENTIALS
+// PINNED REPORTS
 // =============================================================================
-
 export async function getPinnedReports(
   userId?: number,
   page?: number,
   limit?: number
 ) {
-  // If userId not provided, get from credentials
   if (!userId) {
-    const credentials = await getStoredCredentials();
-    if (!credentials) {
-      throw new Error("User not authenticated");
-    }
-    userId = credentials.userId;
+    const creds = await getStoredCredentials();
+    if (!creds) throw new Error("Not authenticated");
+    userId = creds.userId;
   }
 
-  const params = new URLSearchParams();
-  params.append("user_id", userId.toString());
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
+  const qs = new URLSearchParams();
+  qs.append("user_id", userId.toString());
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
 
-  const query = params.toString();
-  return request(`/pinned-reports${query ? `?${query}` : ""}`);
+  return request(`/pinned-reports?${qs.toString()}`);
 }
 
-export async function pinReport(data: { user_id: number; report_id: number }) {
-  // Verify the user_id matches the authenticated user
-  const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
-  if (data.user_id !== credentials.userId) {
+export async function pinReport(data: {
+  user_id: number;
+  report_id: number;
+}) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== data.user_id)
     throw new Error("User ID mismatch");
-  }
 
   return request("/pinned-reports", "POST", data);
 }
 
 export async function unpinReport(userId: number, reportId: number) {
-  // Verify the user_id matches the authenticated user
-  const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
-  if (userId !== credentials.userId) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
     throw new Error("User ID mismatch");
-  }
 
-  const params = new URLSearchParams();
-  params.append("user_id", userId.toString());
+  const qs = new URLSearchParams();
+  qs.append("user_id", userId.toString());
 
-  return request(`/pinned-reports/${reportId}?${params.toString()}`, "DELETE");
+  return request(`/pinned-reports/${reportId}?${qs.toString()}`, "DELETE");
 }
 
 export async function getUserPinnedReports(
@@ -549,52 +603,41 @@ export async function getUserPinnedReports(
   page?: number,
   limit?: number
 ) {
-  // Verify the user_id matches the authenticated user
   const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
-  if (userId !== credentials.userId) {
-    throw new Error("User ID mismatch");
-  }
+  if (!credentials) throw new Error("User not authenticated");
+  if (userId !== credentials.userId) throw new Error("User ID mismatch");
 
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
 
-  return request(`/users/${userId}/pinned-reports?${params.toString()}`);
+  return request(`/users/${userId}/pinned-reports?${qs.toString()}`);
 }
 
 export async function checkPinnedStatus(userId: number, reportId: number) {
-  // Verify the user_id matches the authenticated user
-  const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
-  if (userId !== credentials.userId) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
     throw new Error("User ID mismatch");
-  }
 
   return request(`/pinned-reports/check/${userId}/${reportId}`);
 }
 
-export async function getPinnedReportDetail(userId: number, reportId: number) {
-  // Verify the user_id matches the authenticated user
-  const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
-  if (userId !== credentials.userId) {
+export async function getPinnedReportDetail(
+  userId: number,
+  reportId: number
+) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
     throw new Error("User ID mismatch");
-  }
 
   return request(`/pinned-reports/${userId}/${reportId}/details`);
 }
 
 // =============================================================================
-// STATISTICS & ANALYTICS
+// STATS & ADMIN
 // =============================================================================
-
 export async function getOverviewStats() {
   return request("/stats/overview");
 }
@@ -604,14 +647,10 @@ export async function getDepartmentOverviewStats(department: string) {
 }
 
 export async function getUserStats(userId: number) {
-  // Verify the user_id matches the authenticated user
-  const credentials = await getStoredCredentials();
-  if (!credentials) {
-    throw new Error("User not authenticated");
-  }
-  if (userId !== credentials.userId) {
+  const creds = await getStoredCredentials();
+  if (!creds) throw new Error("Not authenticated");
+  if (creds.userId !== userId)
     throw new Error("User ID mismatch");
-  }
 
   return request(`/stats/user/${userId}`);
 }
@@ -627,18 +666,15 @@ export async function getAllAdminStats() {
 // =============================================================================
 // ADMIN DASHBOARD
 // =============================================================================
-
 export async function getAdminDashboard() {
   return request("/admin/dashboard");
 }
 
 export async function getPendingReports(page?: number, limit?: number) {
-  const params = new URLSearchParams();
-  if (page) params.append("page", page.toString());
-  if (limit) params.append("limit", limit.toString());
-
-  const query = params.toString();
-  return request(`/admin/reports/pending${query ? `?${query}` : ""}`);
+  const qs = new URLSearchParams();
+  if (page) qs.append("page", page.toString());
+  if (limit) qs.append("limit", limit.toString());
+  return request(`/admin/reports/pending?${qs.toString()}`);
 }
 
 export async function getAssignedReports(
@@ -650,22 +686,123 @@ export async function getAssignedReports(
   params.append("admin_id", adminId.toString());
   if (page) params.append("page", page.toString());
   if (limit) params.append("limit", limit.toString());
-
   return request(`/admin/reports/assigned?${params.toString()}`);
 }
 
-// Función de utilidad para probar la conexión
+// =============================================================================
+// DEBUG
+// =============================================================================
 export async function testConnection() {
-  console.log("Testing API connection to:", API_BASE_URL);
-
+  console.log("Testing API connection:", API_BASE_URL);
   try {
-    const response = await fetch(`${API_BASE_URL}/`, {
-      method: "GET",
-    });
-    console.log("Connection test successful, status:", response.status);
-    return true;
-  } catch (error) {
-    console.error("Connection test failed:", error);
+    const res = await fetch(`${API_BASE_URL}/`);
+    return res.ok;
+  } catch (err) {
+    console.error("Connection test failed:", err);
     return false;
   }
+}
+
+// =============================================================================
+// TODO REPORT ACTIONS - MISSING ROUTES IN BACKEND (in progress)
+// =============================================================================
+
+// TODO Add/Remove rating (like) to report
+export async function toggleRating(
+  reportId: number
+): Promise<{ rating: number; rated: boolean }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(`/reports/${reportId}/rate`, "POST", {
+    user_id: credentials.userId,
+  });
+}
+
+// TODO Check if user rated the report
+export async function checkReportRated(
+  reportId: number
+): Promise<{ rated: boolean; rating: number }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(
+    `/reports/${reportId}/rating-status?user_id=${credentials.userId}`
+  );
+}
+
+// TODO Get rating count for report
+export async function getReportRating(
+  reportId: number
+): Promise<{ rating: number }> {
+  return request(`/reports/${reportId}/rating`);
+}
+
+// TODO Check if report is pinned by current user
+export async function checkReportPinned(
+  reportId: number
+): Promise<{ pinned: boolean }> {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  return request(
+    `/reports/${reportId}/pinned-status?user_id=${credentials.userId}`
+  );
+}
+
+// TODO Pin/Unpin report
+export async function togglePinReport(reportId: number, pin: boolean) {
+  const credentials = await getStoredCredentials();
+  if (!credentials) throw new Error("User not authenticated");
+
+  if (pin) {
+    return request("/pinned-reports", "POST", {
+      user_id: credentials.userId,
+      report_id: reportId,
+    });
+  } else {
+    return unpinReport(credentials.userId, reportId);
+  }
+}
+
+// TODO Edit report (author only)
+export async function editReport(
+  reportId: number,
+  data: {
+    title?: string;
+    description?: string;
+    category?: string;
+  }
+) {
+  return request(`/reports/${reportId}`, "PUT", data);
+}
+
+// TODO Admin status changes
+export async function changeReportStatus(
+  reportId: number,
+  status: string,
+  adminId: number
+) {
+  return request(`/reports/${reportId}/status`, "PUT", {
+    status,
+    admin_id: adminId,
+  });
+}
+
+// TODO Get available status options (for admin)
+export async function getStatusOptions() {
+  return request("/reports/status-options");
+}
+
+
+// TODO Get location details with address
+export async function getLocationDetails(locationId: number): Promise<{
+  id: number;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  city?: string;
+  country?: string;
+}> {
+  return request(`/locations/${locationId}/details`);
 }

@@ -1,62 +1,160 @@
-import { ThemedText } from "@/components/themed-text";
+// app/(modals)/report-view.tsx
 import { ThemedView } from "@/components/themed-view";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { StyleSheet, View, ScrollView } from "react-native";
-import { Button, Text, Chip, ActivityIndicator } from "react-native-paper";
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  Image,
+  RefreshControl,
+} from "react-native";
+import { Button, Text, ActivityIndicator, Snackbar } from "react-native-paper";
 import { useEffect, useState } from "react";
-import { getReport } from "@/utils/api";
-import type { ReportData } from "@/types/interfaces";
+import {
+  getReport,
+  buildImageUrl,
+  togglePinReport,
+  toggleRating,
+  changeReportStatus,
+  checkReportPinned,
+  checkReportRated,
+} from "@/utils/api";
+import type { ReportData, ReportStatus } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
+import { useAuth } from "@/hooks/useAuth";
+import { ReportActionBar } from "@/components/ReportActionBar";
+import { ReportDetails } from "@/components/ReportDetails";
 
 export default function ReportViewModal() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { colors } = useAppColors();
+  const { user: currentUser } = useAuth();
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isPinning, setIsPinning] = useState(false);
+  const [isRating, setIsRating] = useState(false);
+  const [isRated, setIsRated] = useState(false);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [snackbar, setSnackbar] = useState({ visible: false, message: "" });
 
-  useEffect(() => {
-    const loadReport = async () => {
-      try {
-        setLoading(true);
-        const data = await getReport(Number(id));
-        setReport(data);
-      } catch (err: any) {
-        setError(err.message || "Failed to load report.");
-        console.error("Error loading report:", err);
-      } finally {
-        setLoading(false);
+  const loadReport = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      setImageError(false);
+      const data = await getReport(Number(id));
+      setReport(data);
+
+      // Check if report is pinned and rated by current user
+      if (currentUser) {
+        try {
+          const [pinnedStatus, ratedStatus] = await Promise.all([
+            checkReportPinned(Number(id)),
+            checkReportRated(Number(id)),
+          ]);
+          setIsPinned(pinnedStatus.pinned);
+          setIsRated(ratedStatus.rated);
+          setRatingCount(ratedStatus.rating);
+        } catch (err) {
+          console.error("Error checking report status:", err);
+          if (data.rating !== undefined) {
+            setRatingCount(data.rating);
+          }
+        }
+      } else if (data.rating !== undefined) {
+        setRatingCount(data.rating);
       }
-    };
-
-    if (id) loadReport();
-  }, [id]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return colors.reportStatus.open;
-      case "in_progress":
-        return colors.reportStatus.in_progress;
-      case "resolved":
-        return colors.reportStatus.resolved;
-      case "denied":
-        return colors.reportStatus.denied;
-      case "closed":
-        return colors.reportStatus.closed;
-      default:
-        return colors.textSecondary;
+    } catch (err: any) {
+      setError(err.message || "Failed to load report.");
+      console.error("Error loading report:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const getStatusText = (status: string) => {
-    return status.replace("_", " ").toUpperCase();
+  useEffect(() => {
+    if (id) loadReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, currentUser]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadReport();
+  };
+
+  // Action handlers
+  const handleEdit = () => {
+    if (!report) return;
+    // TODO: Navigate to edit screen
+  };
+
+  const handlePin = async (pinned: boolean) => {
+    if (!report || !currentUser) return;
+
+    try {
+      setIsPinning(true);
+      await togglePinReport(report.id, pinned);
+      setIsPinned(pinned);
+      showSnackbar(pinned ? "Report pinned" : "Report unpinned");
+    } catch (err: any) {
+      console.error("Error toggling pin:", err);
+      showSnackbar(err.message || "Failed to update pin status");
+    } finally {
+      setIsPinning(false);
+    }
+  };
+
+  const handleRating = async () => {
+    if (!report || !currentUser) return;
+
+    try {
+      setIsRating(true);
+      const result = await toggleRating(report.id);
+      setIsRated(result.rated);
+      setRatingCount(result.rating);
+      showSnackbar(result.rated ? "Rating added" : "Rating removed");
+    } catch (err: any) {
+      console.error("Error toggling rating:", err);
+      showSnackbar(err.message || "Failed to update rating");
+    } finally {
+      setIsRating(false);
+    }
+  };
+
+  const handleStatusChange = async (status: ReportStatus) => {
+    if (!report || !currentUser?.isAdmin) return;
+
+    try {
+      await changeReportStatus(report.id, status, currentUser.id);
+      setReport({ ...report, status });
+      showSnackbar(`Status updated to ${status}`);
+    } catch (err: any) {
+      console.error("Error changing status:", err);
+      showSnackbar(err.message || "Failed to change status");
+    }
+  };
+
+  const showSnackbar = (message: string) => {
+    setSnackbar({ visible: true, message });
+  };
+
+  const hideSnackbar = () => {
+    setSnackbar({ visible: false, message: "" });
   };
 
   const styles = createStyles(colors);
 
-  if (loading) {
+  // finalImageUri: build full URL when report has image
+  const rawImageUrl = report?.image_url ?? "";
+  const finalImageUri = rawImageUrl ? buildImageUrl(rawImageUrl) : undefined;
+
+  if (loading && !refreshing) {
     return (
       <ThemedView style={styles.container}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -65,128 +163,118 @@ export default function ReportViewModal() {
     );
   }
 
+  const ErrorState = () => (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorIcon}>⚠️</Text>
+      <Text style={styles.errorText}>{error}</Text>
+      <Button
+        mode="contained"
+        onPress={loadReport}
+        style={styles.retryButton}
+        buttonColor={colors.primary}
+      >
+        Try Again
+      </Button>
+      <Button
+        mode="outlined"
+        onPress={() => router.back()}
+        textColor={colors.text}
+        style={styles.backButton}
+      >
+        Go Back
+      </Button>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedText type="title" style={styles.title}>
-          Report Details
-        </ThemedText>
+      {/* Header */}
+      <View style={styles.header}>
+        <Button
+          mode="text"
+          onPress={() => router.back()}
+          icon="arrow-left"
+          textColor={colors.text}
+          compact
+        >
+          Back
+        </Button>
+      </View>
 
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
         {error ? (
+          <ErrorState />
+        ) : report ? (
+          <View style={styles.reportContent}>
+            {/* ✅ FULL, CENTERED, NON-CROPPED IMAGE */}
+            {finalImageUri && !imageError && (
+              <View style={styles.imageWrap}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{ uri: finalImageUri }}
+                    style={styles.image}
+                    resizeMode="cover"
+                    onError={() => setImageError(true)}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Action Bar */}
+            <ReportActionBar
+              report={report}
+              onEdit={handleEdit}
+              onRating={handleRating}
+              onStatusChange={handleStatusChange}
+              isPinned={isPinned}
+              onPin={handlePin}
+              isPinning={isPinning}
+              isRating={isRating}
+              isRated={isRated}
+              ratingCount={ratingCount}
+            />
+
+            {/* Report Details Component */}
+            <ReportDetails report={report} ratingCount={ratingCount} />
+          </View>
+        ) : (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorText}>Report not found.</Text>
             <Button
               mode="outlined"
               onPress={() => router.back()}
-              style={styles.backButton}
               textColor={colors.text}
+              style={styles.backButton}
             >
               Go Back
             </Button>
           </View>
-        ) : report ? (
-          <View style={styles.reportContent}>
-            <Chip
-              mode="outlined"
-              style={[
-                styles.statusChip,
-                { borderColor: getStatusColor(report.status) },
-              ]}
-              textStyle={[
-                styles.statusText,
-                { color: getStatusColor(report.status) },
-              ]}
-            >
-              {getStatusText(report.status)}
-            </Chip>
-
-            <Text variant="headlineSmall" style={styles.reportTitle}>
-              {report.title}
-            </Text>
-
-            <Text variant="bodyMedium" style={styles.description}>
-              {report.description}
-            </Text>
-
-            {report.category && (
-              <View style={styles.metaSection}>
-                <Text variant="labelLarge" style={styles.metaLabel}>
-                  Category:
-                </Text>
-                <Text variant="bodyMedium" style={styles.metaText}>
-                  {report.category}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.metaSection}>
-              <Text variant="labelLarge" style={styles.metaLabel}>
-                Created:
-              </Text>
-              <Text variant="bodyMedium" style={styles.metaText}>
-                {new Date(report.created_at).toLocaleString()}
-              </Text>
-            </View>
-
-            {report.resolved_at && (
-              <View style={styles.metaSection}>
-                <Text variant="labelLarge" style={styles.metaLabel}>
-                  Resolved:
-                </Text>
-                <Text variant="bodyMedium" style={styles.metaText}>
-                  {new Date(report.resolved_at).toLocaleString()}
-                </Text>
-              </View>
-            )}
-
-            {report.rating && report.rating > 0 && (
-              <View style={styles.metaSection}>
-                <Text variant="labelLarge" style={styles.metaLabel}>
-                  Rating:
-                </Text>
-                <Text variant="bodyMedium" style={styles.metaText}>
-                  {report.rating} / 5
-                </Text>
-              </View>
-            )}
-
-            {report.location && (
-              <View style={styles.metaSection}>
-                <Text variant="labelLarge" style={styles.metaLabel}>
-                  Location ID:
-                </Text>
-                <Text variant="bodyMedium" style={styles.metaText}>
-                  {report.location_id}
-                </Text>
-              </View>
-            )}
-
-            {report.created_by && (
-              <View style={styles.metaSection}>
-                <Text variant="labelLarge" style={styles.metaLabel}>
-                  Reported By:
-                </Text>
-                <Text variant="bodyMedium" style={styles.metaText}>
-                  User #{report.created_by}
-                </Text>
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.errorContainer}>
-            <Text style={styles.metaText}>Report not found.</Text>
-          </View>
         )}
-
-        {/* <Button
-          mode="outlined"
-          onPress={() => router.back()}
-          style={styles.backButton}
-          textColor={colors.text}
-        >
-          Back
-        </Button> */}
       </ScrollView>
+
+      {/* Snackbar for feedback */}
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={hideSnackbar}
+        duration={3000}
+        action={{
+          label: "OK",
+          onPress: hideSnackbar,
+        }}
+      >
+        {snackbar.message}
+      </Snackbar>
     </ThemedView>
   );
 }
@@ -195,65 +283,61 @@ const createStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: 20,
       backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     scrollContent: {
       flexGrow: 1,
-    },
-    title: {
-      marginBottom: 24,
-      textAlign: "center",
-      color: colors.text,
+      padding: 16,
+      gap: 16,
     },
     loadingText: {
       marginTop: 16,
-      color: colors.text,
-    },
-    reportContent: {
-      flex: 1,
-    },
-    statusChip: {
-      alignSelf: "flex-start",
-      marginBottom: 16,
-      backgroundColor: "transparent",
-    },
-    statusText: {
-      fontWeight: "bold",
-      fontSize: 12,
-    },
-    reportTitle: {
-      marginBottom: 16,
-      fontWeight: "bold",
-      color: colors.text,
-    },
-    description: {
-      marginBottom: 24,
-      lineHeight: 20,
+      textAlign: "center",
       color: colors.textSecondary,
     },
-    metaSection: {
-      marginBottom: 16,
+    imageWrap: {
+      alignItems: "center",
+      marginBottom: 12,
     },
-    metaLabel: {
-      fontWeight: "bold",
-      marginBottom: 4,
-      color: colors.text,
+    imageContainer: {
+      borderRadius: 8,
+      overflow: "hidden",
+      width: "100%",
     },
-    metaText: {
-      color: colors.text,
+    image: {
+      width: "100%",
+      height: 200,
+    },
+    reportContent: {
+      width: "100%",
     },
     errorContainer: {
       alignItems: "center",
       paddingVertical: 32,
     },
+    errorIcon: {
+      fontSize: 48,
+      marginBottom: 16,
+    },
     errorText: {
       color: colors.error,
       textAlign: "center",
       marginBottom: 16,
+      fontSize: 16,
+    },
+    retryButton: {
+      marginBottom: 12,
+      minWidth: 120,
     },
     backButton: {
-      marginTop: 24,
-      alignSelf: "center",
+      minWidth: 120,
     },
   });

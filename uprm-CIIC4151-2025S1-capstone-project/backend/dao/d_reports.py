@@ -2,43 +2,76 @@ from dotenv import load_dotenv
 from load import load_db
 
 
+def _normalize_sort(sort: str | None) -> str:
+    """
+    Whitelist sort direction to prevent SQL injection.
+    Returns 'ASC' or 'DESC'. Default is 'DESC'.
+    """
+    if not sort:
+        return "DESC"
+    s = sort.strip().upper()
+    return "ASC" if s == "ASC" else "DESC"
+
+
 class ReportsDAO:
     def __init__(self):
         load_dotenv()
         self.conn = load_db()
 
-    def get_reports_paginated(self, limit, offset):
-        query = """
+    # -------------------------------
+    # Core list/read/write operations
+    # -------------------------------
+    def get_reports_paginated(
+        self,
+        limit: int,
+        offset: int,
+        sort: str | None = None,
+        allowed_categories: list[str] | None = None,
+    ):
+        """Fetch reports with pagination and optional category restriction."""
+        order_dir = _normalize_sort(sort)
+        where_clauses: list[str] = []
+        params: list = []
+
+        if allowed_categories:
+            where_clauses.append("category = ANY(%s)")
+            params.append(allowed_categories)
+
+        where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+        query = f"""
             SELECT id, title, description, status, category, created_by,
                    validated_by, resolved_by, created_at, resolved_at,
                    location, image_url, rating
             FROM reports
-            ORDER BY created_at DESC
+            {where_sql}
+            ORDER BY created_at {order_dir}, id {order_dir}
             LIMIT %s OFFSET %s
         """
+        params.extend([limit, offset])
+
         with self.conn.cursor() as cur:
-            cur.execute(query, (limit, offset))
+            cur.execute(query, params)
             return cur.fetchall()
 
-    def get_total_report_count(self):
-        query = "SELECT COUNT(*) FROM reports"
+    def get_total_report_count(self, allowed_categories: list[str] | None = None):
+        """Count reports, optionally restricted to a set of categories."""
+        where_clauses: list[str] = []
+        params: list = []
+
+        if allowed_categories:
+            where_clauses.append("category = ANY(%s)")
+            params.append(allowed_categories)
+
+        where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        query = f"SELECT COUNT(*) FROM reports{where_sql}"
+
         with self.conn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query, params)
             return cur.fetchone()[0]
 
-    def get_all_reports(self):
-        query = """
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
-            FROM reports
-            ORDER BY created_at DESC
-        """
-        with self.conn.cursor() as cur:
-            cur.execute(query)
-            return cur.fetchall()
-
-    def get_report_by_id(self, report_id):
+    def get_report_by_id(self, report_id: int):
+        """Fetch a single report by ID."""
         query = """
             SELECT id, title, description, status, category, created_by,
                    validated_by, resolved_by, created_at, resolved_at,
@@ -52,13 +85,14 @@ class ReportsDAO:
 
     def create_report(
         self,
-        title,
-        description,
-        category="other",
-        location_id=None,
-        image_url=None,
-        created_by=None,
+        title: str,
+        description: str,
+        category: str = "other",
+        location_id: int | None = None,
+        image_url: str | None = None,
+        created_by: int | None = None,
     ):
+        """Insert a new report and increment user's total_reports."""
         query = """
             INSERT INTO reports (title, description, category, location, image_url, created_by)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -68,33 +102,32 @@ class ReportsDAO:
         """
         with self.conn.cursor() as cur:
             cur.execute(
-                query,
-                (title, description, category, location_id, image_url, created_by),
+                query, (title, description, category, location_id, image_url, created_by)
             )
             new_report = cur.fetchone()
             if created_by is not None:
                 cur.execute(
                     "UPDATE users SET total_reports = total_reports + 1 WHERE id = %s",
-                    (created_by,)
+                    (created_by,),
                 )
             self.conn.commit()
             return new_report
 
     def update_report(
         self,
-        report_id,
-        status=None,
-        rating=None,
-        title=None,
-        description=None,
-        category=None,
-        validated_by=None,
-        resolved_by=None,
-        resolved_at=None,
-        location_id=None,
-        image_url=None,
+        report_id: int,
+        status: str | None = None,
+        rating: int | None = None,
+        title: str | None = None,
+        description: str | None = None,
+        category: str | None = None,
+        validated_by: int | None = None,
+        resolved_by: int | None = None,
+        resolved_at: str | None = None,
+        location_id: int | None = None,
+        image_url: str | None = None,
     ):
-        # Build dynamic query based on provided fields
+        """Update any fields of a report and return the updated row."""
         fields = []
         params = []
 
@@ -150,106 +183,157 @@ class ReportsDAO:
             self.conn.commit()
             return cur.fetchone()
 
-    def delete_report(self, report_id):
+    def delete_report(self, report_id: int):
+        """Delete a report by ID, return True if deleted."""
         query = """
             DELETE FROM reports
             WHERE id = %s
-            RETURNING id, title, description, status, category, created_by,
-                      validated_by, resolved_by, created_at, resolved_at,
-                      location, image_url, rating
+            RETURNING id
         """
         with self.conn.cursor() as cur:
             cur.execute(query, (report_id,))
             self.conn.commit()
-            result = cur.fetchone()
-            return result is not None
+            return cur.fetchone() is not None
 
-    def search_reports(self, query, limit, offset):
-        search_query = f"%{query}%"
-        query_sql = """
+    # ------------------------------------------------------------
+    # Unified search + filter + sort (with admin category restriction)
+    # ------------------------------------------------------------
+    def search_reports(
+        self,
+        q: str | None = None,
+        status: str | None = None,
+        category: str | None = None,
+        limit: int = 10,
+        offset: int = 0,
+        sort: str | None = None,
+        allowed_categories: list[str] | None = None,
+    ):
+        """Search and filter reports with pagination, sorting, and optional admin restrictions."""
+        where = []
+        params: list = []
+
+        if q:
+            where.append("(title ILIKE %s OR description ILIKE %s)")
+            like = f"%{q}%"
+            params.extend([like, like])
+        if status:
+            where.append("status = %s")
+            params.append(status)
+        if category:
+            where.append("category = %s")
+            params.append(category)
+        if allowed_categories:
+            where.append("category = ANY(%s)")
+            params.append(allowed_categories)
+
+        where_sql = f" WHERE {' AND '.join(where)}" if where else ""
+        order_dir = _normalize_sort(sort)
+
+        count_sql = f"SELECT COUNT(*) FROM reports{where_sql}"
+        data_sql = f"""
             SELECT id, title, description, status, category, created_by,
                    validated_by, resolved_by, created_at, resolved_at,
                    location, image_url, rating
             FROM reports
-            WHERE title ILIKE %s OR description ILIKE %s
-            ORDER BY created_at DESC
+            {where_sql}
+            ORDER BY created_at {order_dir}, id {order_dir}
             LIMIT %s OFFSET %s
         """
-        with self.conn.cursor() as cur:
-            cur.execute(query_sql, (search_query, search_query, limit, offset))
-            return cur.fetchall()
-
-    def get_search_reports_count(self, query):
-        search_query = f"%{query}%"
-        query_sql = """
-            SELECT COUNT(*) FROM reports
-            WHERE title ILIKE %s OR description ILIKE %s
-        """
-        with self.conn.cursor() as cur:
-            cur.execute(query_sql, (search_query, search_query))
-            return cur.fetchone()[0]
-
-    def filter_reports(self, status, category, limit, offset):
-        base_query = """
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
-            FROM reports
-            WHERE 1=1
-        """
-        params = []
-
-        if status:
-            base_query += " AND status = %s"
-            params.append(status)
-
-        if category:
-            base_query += " AND category = %s"
-            params.append(category)
-
-        base_query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
 
         with self.conn.cursor() as cur:
-            cur.execute(base_query, params)
-            return cur.fetchall()
+            cur.execute(count_sql, params)
+            total_count = cur.fetchone()[0]
 
-    def get_filter_reports_count(self, status, category):
-        base_query = "SELECT COUNT(*) FROM reports WHERE 1=1"
-        params = []
+            cur.execute(data_sql, params + [limit, offset])
+            rows = cur.fetchall()
 
-        if status:
-            base_query += " AND status = %s"
-            params.append(status)
+        return rows, total_count
 
-        if category:
-            base_query += " AND category = %s"
-            params.append(category)
-
-        with self.conn.cursor() as cur:
-            cur.execute(base_query, params)
-            return cur.fetchone()[0]
-
-    def get_reports_by_user(self, user_id, limit, offset):
+    def get_user_rating_status(self, report_id, user_id):
+        """Check if a user has rated a specific report"""
         query = """
+            SELECT rating
+            FROM reports
+            WHERE id = %s AND created_by = %s AND rating IS NOT NULL
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (report_id, user_id))
+            result = cur.fetchone()
+
+            if result:
+                return {"rated": True, "rating": result[0]}
+            else:
+                return {"rated": False, "rating": None}
+
+    def get_report_rating_stats(self, report_id):
+        """Get overall rating statistics for a report"""
+        # Get average rating and total ratings
+        query = """
+            SELECT
+                COALESCE(AVG(rating), 0) as average_rating,
+                COUNT(rating) as total_ratings
+            FROM reports
+            WHERE id = %s AND rating IS NOT NULL
+        """
+
+        # Get rating distribution
+        distribution_query = """
+            SELECT
+                rating,
+                COUNT(*) as count
+            FROM reports
+            WHERE id = %s AND rating IS NOT NULL
+            GROUP BY rating
+            ORDER BY rating
+        """
+
+        with self.conn.cursor() as cur:
+            # Get average and total
+            cur.execute(query, (report_id,))
+            stats_result = cur.fetchone()
+
+            # Get distribution
+            cur.execute(distribution_query, (report_id,))
+            distribution_results = cur.fetchall()
+
+            # Build distribution dictionary
+            distribution = {}
+            for rating, count in distribution_results:
+                distribution[str(rating)] = count
+
+            return {
+                "average_rating": float(stats_result[0]) if stats_result[0] else 0,
+                "total_ratings": stats_result[1],
+                "distribution": distribution,
+            }
+
+    # -------------------------------
+    # User-specific reports
+    # -------------------------------
+    def get_reports_by_user(self, user_id: int, limit: int, offset: int, sort: str | None = None):
+        order_dir = _normalize_sort(sort)
+        query = f"""
             SELECT id, title, description, status, category, created_by,
                    validated_by, resolved_by, created_at, resolved_at,
                    location, image_url, rating
             FROM reports
             WHERE created_by = %s
-            ORDER BY created_at DESC
+            ORDER BY created_at {order_dir}, id {order_dir}
             LIMIT %s OFFSET %s
         """
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id, limit, offset))
             return cur.fetchall()
 
-    def get_user_reports_count(self, user_id):
+    def get_user_reports_count(self, user_id: int):
         query = "SELECT COUNT(*) FROM reports WHERE created_by = %s"
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id,))
             return cur.fetchone()[0]
 
+    # -------------------------------
+    # Dashboard / Stats
+    # -------------------------------
     def get_overview_stats(self):
         query = """
             SELECT
@@ -266,7 +350,6 @@ class ReportsDAO:
         with self.conn.cursor() as cur:
             cur.execute(query)
             result = cur.fetchone()
-
             return {
                 "total_reports": result[0],
                 "open_reports": result[1],
@@ -278,7 +361,7 @@ class ReportsDAO:
                 "rated_reports": result[7],
             }
 
-    def get_department_stats(self, department):
+    def get_department_stats(self, department: str):
         query = """
             SELECT
                 d.department,
@@ -296,10 +379,8 @@ class ReportsDAO:
         with self.conn.cursor() as cur:
             cur.execute(query, (department,))
             result = cur.fetchone()
-
             if not result:
                 return None
-
             return {
                 "department": result[0],
                 "total_reports": result[1],
@@ -310,70 +391,49 @@ class ReportsDAO:
             }
 
     def get_admin_dashboard(self):
-        # Recent reports
         recent_reports_query = """
             SELECT id, title, status, category, created_at
             FROM reports
             ORDER BY created_at DESC
             LIMIT 10
         """
-
-        # Stats by category
         category_stats_query = """
             SELECT category, COUNT(*),
                 COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved
             FROM reports
             GROUP BY category
         """
-
-        # Stats by status
-        status_stats_query = """
-            SELECT status, COUNT(*)
-            FROM reports
-            GROUP BY status
-        """
+        status_stats_query = "SELECT status, COUNT(*) FROM reports GROUP BY status"
 
         with self.conn.cursor() as cur:
-            # Get recent reports
             cur.execute(recent_reports_query)
             recent_reports = cur.fetchall()
-
-            # Get category stats
             cur.execute(category_stats_query)
             category_stats = cur.fetchall()
-
-            # Get status stats
             cur.execute(status_stats_query)
             status_stats = cur.fetchall()
 
             return {
                 "recent_reports": [
-                    {
-                        "id": report[0],
-                        "title": report[1],
-                        "status": report[2],
-                        "category": report[3],
-                        "created_at": report[4],
-                    }
-                    for report in recent_reports
+                    {"id": r[0], "title": r[1], "status": r[2], "category": r[3], "created_at": r[4]}
+                    for r in recent_reports
                 ],
-                "category_stats": [
-                    {"category": stat[0], "total": stat[1], "resolved": stat[2]}
-                    for stat in category_stats
-                ],
-                "status_stats": [
-                    {"status": stat[0], "count": stat[1]} for stat in status_stats
-                ],
+                "category_stats": [{"category": s[0], "total": s[1], "resolved": s[2]} for s in category_stats],
+                "status_stats": [{"status": s[0], "count": s[1]} for s in status_stats],
             }
 
-    def get_pending_reports(self, limit, offset):
-        query = """
+    # -------------------------------
+    # Pending / Assigned reports
+    # -------------------------------
+    def get_pending_reports(self, limit: int, offset: int, sort: str | None = None):
+        order_dir = _normalize_sort(sort)
+        query = f"""
             SELECT id, title, description, status, category, created_by,
-                validated_by, resolved_by, created_at, resolved_at,
-                location, image_url, rating
+                   validated_by, resolved_by, created_at, resolved_at,
+                   location, image_url, rating
             FROM reports
             WHERE status = 'open'
-            ORDER BY created_at DESC
+            ORDER BY created_at {order_dir}, id {order_dir}
             LIMIT %s OFFSET %s
         """
         with self.conn.cursor() as cur:
@@ -386,21 +446,22 @@ class ReportsDAO:
             cur.execute(query)
             return cur.fetchone()[0]
 
-    def get_assigned_reports(self, admin_id, limit, offset):
-        query = """
+    def get_assigned_reports(self, admin_id: int, limit: int, offset: int, sort: str | None = None):
+        order_dir = _normalize_sort(sort)
+        query = f"""
             SELECT id, title, description, status, category, created_by,
-                validated_by, resolved_by, created_at, resolved_at,
-                location, image_url, rating
+                   validated_by, resolved_by, created_at, resolved_at,
+                   location, image_url, rating
             FROM reports
             WHERE (validated_by = %s OR resolved_by = %s) AND status != 'resolved'
-            ORDER BY created_at DESC
+            ORDER BY created_at {order_dir}, id {order_dir}
             LIMIT %s OFFSET %s
         """
         with self.conn.cursor() as cur:
             cur.execute(query, (admin_id, admin_id, limit, offset))
             return cur.fetchall()
 
-    def get_assigned_reports_count(self, admin_id):
+    def get_assigned_reports_count(self, admin_id: int):
         query = """
             SELECT COUNT(*) FROM reports
             WHERE (validated_by = %s OR resolved_by = %s) AND status != 'resolved'
@@ -409,6 +470,9 @@ class ReportsDAO:
             cur.execute(query, (admin_id, admin_id))
             return cur.fetchone()[0]
 
+    # -------------------------------
+    # Cleanup
+    # -------------------------------
     def close(self):
         if self.conn:
             self.conn.close()

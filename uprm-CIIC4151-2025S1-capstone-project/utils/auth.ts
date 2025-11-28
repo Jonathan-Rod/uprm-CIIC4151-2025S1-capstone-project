@@ -113,9 +113,8 @@ export const hasStoredCredentials = async (): Promise<boolean> => {
   return !!(
     credentials?.email &&
     credentials?.password &&
-    credentials?.userId &&
-    credentials?.admin &&
-    credentials?.suspended
+    credentials?.userId
+    // admin and suspended are optional flags, don't force truthy
   );
 };
 
@@ -125,11 +124,11 @@ export const isValidCredentials = (
   return !!(
     credentials?.email &&
     credentials?.password &&
-    credentials?.userId &&
-    credentials?.admin &&
-    credentials?.suspended
+    credentials?.userId
+    // admin and suspended are optional flags, don't force truthy
   );
 };
+
 
 // Check if user is logged in
 export const isUserLoggedIn = async (): Promise<boolean> => {
