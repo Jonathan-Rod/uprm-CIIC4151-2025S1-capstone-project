@@ -22,9 +22,9 @@ CREATE TABLE users (
     PASSWORD VARCHAR(255) NOT NULL,
     ADMIN BOOLEAN DEFAULT FALSE,
     suspended BOOLEAN DEFAULT FALSE,
-    pinned BOOLEAN DEFAULT FALSE, -- verify
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_reports INTEGER
+    pinned BOOLEAN DEFAULT FALSE,
+    total_reports INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Email verification table
