@@ -11,20 +11,19 @@ class PinnedReportsHandler:
         if len(pinned_report) == 3:  # user_id, report_id, pinned_at
             return {
                 "user_id": pinned_report[0],
-                "report_id": pinned_report[1],
+                "id": pinned_report[1],
                 "pinned_at": pinned_report[2],
             }
         else:  # If it includes report details from JOIN
             return {
                 "user_id": pinned_report[0],
-                "report_id": pinned_report[1],
+                "id": pinned_report[1],
                 "pinned_at": pinned_report[2],
-                "report_title": pinned_report[3] if len(pinned_report) > 3 else None,
-                "report_description": (
-                    pinned_report[4] if len(pinned_report) > 4 else None
-                ),
-                "report_status": pinned_report[5] if len(pinned_report) > 5 else None,
-                "report_category": pinned_report[6] if len(pinned_report) > 6 else None,
+                "title": pinned_report[3] if len(pinned_report) > 3 else None,
+                "description": pinned_report[4] if len(pinned_report) > 4 else None,
+                "status": pinned_report[5] if len(pinned_report) > 5 else None,
+                "category": pinned_report[6] if len(pinned_report) > 6 else None,
+                "created_at": pinned_report[7] if len(pinned_report) > 7 else None,
             }
 
     def pin_report(self, data):

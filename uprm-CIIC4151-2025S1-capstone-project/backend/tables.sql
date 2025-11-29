@@ -46,10 +46,11 @@ CREATE TABLE administrators (
 -- Location table
 CREATE TABLE location (
     id SERIAL PRIMARY KEY,
+    city VARCHAR(100),
     latitude DECIMAL(9, 6) NOT NULL,
     longitude DECIMAL(9, 6) NOT NULL,
     address TEXT,
-    city VARCHAR(100),
+    -- city was here but I deleted it
     country VARCHAR(100)
 );
 
@@ -528,190 +529,86 @@ VALUES ('DTOP', 1),
     ('AAA', 3),
     ('DDS', 4);
 
--- Insert locations around Puerto Rico with addresses
-INSERT INTO
-    location (
-        latitude,
-        longitude,
-        address,
-        city,
-        country
-    )
-VALUES (
-        18.4655,
-        -66.1057,
-        'Avenida Ponce de León',
-        'San Juan',
-        'Puerto Rico'
-    ),
-    (
-        18.3985,
-        -66.0610,
-        'Avenida Roosevelt',
-        'San Juan',
-        'Puerto Rico'
-    ),
-    (
-        18.4401,
-        -66.1286,
-        'Calle De Diego',
-        'San Juan',
-        'Puerto Rico'
-    ),
-    (
-        18.4834,
-        -66.1328,
-        'Calle Loíza',
-        'San Juan',
-        'Puerto Rico'
-    ),
-    (
-        18.4105,
-        -66.0505,
-        'Avenida Fernández Juncos',
-        'San Juan',
-        'Puerto Rico'
-    ),
-    (
-        18.3980,
-        -66.1557,
-        'Carretera PR-2',
-        'Bayamón',
-        'Puerto Rico'
-    ),
-    (
-        18.3794,
-        -66.1630,
-        'Avenida Central',
-        'Bayamón',
-        'Puerto Rico'
-    ),
-    (
-        18.4202,
-        -66.1660,
-        'Calle Cuesta',
-        'Bayamón',
-        'Puerto Rico'
-    ),
-    (
-        18.3801,
-        -65.9574,
-        'Avenida Isla Verde',
-        'Carolina',
-        'Puerto Rico'
-    ),
-    (
-        18.4059,
-        -65.9799,
-        'Avenida Campo Rico',
-        'Carolina',
-        'Puerto Rico'
-    ),
-    (
-        18.0111,
-        -66.6141,
-        'Plaza del Mercado',
-        'Ponce',
-        'Puerto Rico'
-    ),
-    (
-        17.9985,
-        -66.6250,
-        'Avenida Las Américas',
-        'Ponce',
-        'Puerto Rico'
-    ),
-    (
-        18.0250,
-        -66.6030,
-        'Calle Cristina',
-        'Ponce',
-        'Puerto Rico'
-    ),
-    (
-        18.2380,
-        -66.0320,
-        'Carretera PR-1',
-        'Caguas',
-        'Puerto Rico'
-    ),
-    (
-        18.2319,
-        -66.0450,
-        'Plaza Degetau',
-        'Caguas',
-        'Puerto Rico'
-    ),
-    (
-        18.2011,
-        -67.1396,
-        'Avenida Hostos',
-        'Mayagüez',
-        'Puerto Rico'
-    ),
-    (
-        18.2145,
-        -67.1450,
-        'Plaza Colón',
-        'Mayagüez',
-        'Puerto Rico'
-    ),
-    (
-        18.4724,
-        -66.7157,
-        'Carretera PR-2',
-        'Arecibo',
-        'Puerto Rico'
-    ),
-    (
-        18.4550,
-        -66.7300,
-        'Plaza de Recreo',
-        'Arecibo',
-        'Puerto Rico'
-    ),
-    (
-        18.3258,
-        -65.6524,
-        'Carretera PR-3',
-        'Fajardo',
-        'Puerto Rico'
-    ),
-    (
-        18.3350,
-        -65.6600,
-        'Avenida Conquistador',
-        'Fajardo',
-        'Puerto Rico'
-    ),
-    (
-        18.1498,
-        -65.8272,
-        'Plaza Pública',
-        'Humacao',
-        'Puerto Rico'
-    ),
-    (
-        18.1400,
-        -65.8200,
-        'Avenida Boulevard',
-        'Humacao',
-        'Puerto Rico'
-    ),
-    (
-        18.0784,
-        -66.9605,
-        'Carretera PR-52',
-        'Juana Díaz',
-        'Puerto Rico'
-    ),
-    (
-        18.0622,
-        -67.1497,
-        'Avenida Los Patriotas',
-        'Cabo Rojo',
-        'Puerto Rico'
-    );
+-- Insert locations around Puerto Rico
+INSERT INTO location (city, latitude, longitude) VALUES
+  ('Adjuntas',        18.163485, -66.723158),
+  ('Aguada',          18.380158, -67.188704),
+  ('Aguadilla',       18.427445, -67.154070),
+  ('Aguas Buenas',    18.256899, -66.102944),
+  ('Aibonito',        18.139959, -66.266002),
+  ('Añasco',          18.285448, -67.140294),
+  ('Arecibo',         18.470514, -66.721847),
+  ('Arroyo',          17.996422, -66.092488),
+  ('Barceloneta',     18.450500, -66.538510),
+  ('Barranquitas',    18.186624, -66.306280),
+  ('Bayamón',         18.389396, -66.165322),
+  ('Cabo Rojo',       18.086627, -67.145735),
+  ('Caguas',          18.238800, -66.035249),
+  ('Camuy',           18.483833, -66.844899),
+  ('Canóvanas',       18.374875, -65.899753),
+  ('Carolina',        18.368088, -66.042473),
+  ('Cataño',          18.446536, -66.135578),
+  ('Cayey',           18.111905, -66.166000),
+  ('Ceiba',           18.247518, -65.908495),
+  ('Ciales',          18.336062, -66.468782),
+  ('Cidra',           18.175791, -66.161278),
+  ('Coamo',           18.079962, -66.357947),
+  ('Comerío',         18.219200, -66.225602),
+  ('Corozal',         18.341060, -66.316840),
+  ('Culebra',         18.310394, -65.303071),
+  ('Dorado',          18.458830, -66.267670),
+  ('Fajardo',         18.325215, -65.653936),
+  ('Florida',         18.362450, -66.561280),
+  ('Guánica',         17.972515, -66.908626),
+  ('Guayama',         17.984133, -66.113777),
+  ('Guayanilla',      18.019131, -66.791842),
+  ('Guaynabo',        18.361295, -66.110296),
+  ('Gurabo',          18.254399, -65.972942),
+  ('Hatillo',         18.428464, -66.787532),
+  ('Hormigueros',     18.133464, -67.112812),
+  ('Humacao',         18.151574, -65.824853),
+  ('Isabela',         18.500780, -67.024350),
+  ('Jayuya',          18.218567, -66.591562),
+  ('Juana Díaz',      18.053437, -66.507508),
+  ('Juncos',          18.227456, -65.920997),
+  ('Lajas',           18.049962, -67.059345),
+  ('Lares',           18.294670, -66.877120),
+  ('Las Marías',      18.251900, -66.992120),
+  ('Las Piedras',     18.185575, -65.873625),
+  ('Loíza',           18.432990, -65.878360),
+  ('Luquillo',        18.372451, -65.716551),
+  ('Manatí',          18.418122, -66.526278),
+  ('Maricao',         18.180790, -66.979900),
+  ('Maunabo',         18.007189, -65.899329),
+  ('Mayagüez',        18.201345, -67.145155),
+  ('Moca',            18.396793, -67.147904),
+  ('Morovis',         18.325785, -66.406559),
+  ('Naguabo',         18.211625, -65.734884),
+  ('Naranjito',       18.300786, -66.244890),
+  ('Orocovis',        18.226922, -66.391169),
+  ('Patillas',        18.003738, -66.013406),
+  ('Peñuelas',        18.063358, -66.727390),
+  ('Ponce',           18.011077, -66.614062),
+  ('Quebradillas',    18.473833, -66.938512),
+  ('Rincón',          18.340151, -67.249946),
+  ('Río Grande',      18.380230, -65.831270),
+  ('Sabana Grande',   18.077739, -66.960455),
+  ('Salinas',         18.026837, -66.259620),
+  ('San Germán',      18.080708, -67.041110),
+  ('San Juan',        18.463203, -66.114757),
+  ('San Lorenzo',     18.188691, -65.976586),
+  ('San Sebastián',   18.336620, -66.990180),
+  ('Santa Isabel',    17.966078, -66.404892),
+  ('Toa Alta',        18.388282, -66.248224),
+  ('Toa Baja',        18.444471, -66.254329),
+  ('Trujillo Alto',   18.354672, -66.007388),
+  ('Utuado',          18.265510, -66.700452),
+  ('Vega Alta',       18.412170, -66.331281),
+  ('Vega Baja',       18.446146, -66.404197),
+  ('Vieques',         18.126285, -65.440099),
+  ('Villalba',        18.121755, -66.498579),
+  ('Yabucoa',         18.050520, -65.879329),
+  ('Yauco',           18.034964, -66.849898);
 
 -- Insert reports with realistic Puerto Rico issues
 INSERT INTO
@@ -729,7 +626,9 @@ INSERT INTO
         created_at,
         resolved_at
     )
-VALUES (
+VALUES
+    -- 1: Santurce -> San Juan (65)
+    (
         'Pothole on Main Street',
         'Large pothole on the main street of Santurce that is damaging vehicles',
         'open',
@@ -737,12 +636,13 @@ VALUES (
         6,
         NULL,
         NULL,
-        1,
+        65,
         NULL,
         NULL,
         '2024-01-15 08:30:00',
         NULL
     ),
+    -- 2: Roosevelt Ave -> San Juan (65)
     (
         'Fallen Light Pole',
         'Light pole fallen on Roosevelt Avenue after the storm',
@@ -751,12 +651,13 @@ VALUES (
         7,
         2,
         NULL,
-        2,
+        65,
         NULL,
         NULL,
         '2024-01-16 14:20:00',
         NULL
     ),
+    -- 3: De Diego / Ponce de León -> San Juan (65)
     (
         'Traffic Light Not Working',
         'Traffic light at De Diego and Ponce de León intersection not working',
@@ -765,12 +666,13 @@ VALUES (
         8,
         3,
         3,
-        3,
+        65,
         NULL,
         4,
         '2024-01-10 09:15:00',
         '2024-01-18 16:45:00'
     ),
+    -- 4: Hato Rey -> San Juan (65)
     (
         'Water Leak in Pipe',
         'Constant water leak in AAA pipe in Hato Rey',
@@ -779,12 +681,13 @@ VALUES (
         9,
         NULL,
         NULL,
-        4,
+        65,
         NULL,
         NULL,
         '2024-01-17 11:00:00',
         NULL
     ),
+    -- 5: generic urbanization -> Caguas (13)
     (
         'Accumulated Trash',
         'Trash accumulation for more than a week in urbanization',
@@ -793,12 +696,13 @@ VALUES (
         10,
         4,
         NULL,
-        5,
+        13,
         NULL,
         NULL,
         '2024-01-14 16:45:00',
         NULL
     ),
+    -- 6: "in Bayamón" -> Bayamón (11)
     (
         'Flooded Street',
         'Street floods with every rain in Bayamón',
@@ -807,12 +711,13 @@ VALUES (
         11,
         NULL,
         NULL,
-        6,
+        11,
         NULL,
         NULL,
         '2024-01-18 07:30:00',
         NULL
     ),
+    -- 7: clogged sewer -> Carolina (16)
     (
         'Clogged Sewer',
         'Clogged sewer causing water stagnation',
@@ -821,12 +726,13 @@ VALUES (
         12,
         1,
         1,
-        7,
+        16,
         NULL,
         5,
         '2024-01-05 13:20:00',
         '2024-01-12 10:15:00'
     ),
+    -- 8: flickering light -> Guaynabo (32)
     (
         'Flickering Light',
         'Public street light flickering all night',
@@ -835,12 +741,13 @@ VALUES (
         13,
         NULL,
         NULL,
-        8,
+        32,
         NULL,
         NULL,
         '2024-01-19 20:00:00',
         NULL
     ),
+    -- 9: "in Carolina" -> Carolina (16)
     (
         'Damaged Traffic Sign',
         'Vandalized stop sign in Carolina',
@@ -849,12 +756,13 @@ VALUES (
         14,
         5,
         NULL,
-        9,
+        16,
         NULL,
         NULL,
         '2024-01-13 15:30:00',
         NULL
     ),
+    -- 10: "Caguas highway" -> Caguas (13)
     (
         'Multiple Potholes',
         'Multiple potholes on Caguas highway',
@@ -863,12 +771,13 @@ VALUES (
         15,
         NULL,
         NULL,
-        10,
+        13,
         NULL,
         NULL,
         '2024-01-20 09:45:00',
         NULL
     ),
+    -- 11: delayed trash -> Vega Baja (74)
     (
         'Delayed Trash Collection',
         'Trash collection delayed by 3 days',
@@ -877,12 +786,13 @@ VALUES (
         16,
         2,
         2,
-        11,
+        74,
         NULL,
         3,
         '2024-01-08 10:00:00',
         '2024-01-15 14:00:00'
     ),
+    -- 12: dangerous pole -> Arecibo (7)
     (
         'Dangerous Pole',
         'Electric pole leaning dangerously',
@@ -891,12 +801,13 @@ VALUES (
         17,
         NULL,
         NULL,
-        12,
+        7,
         NULL,
         NULL,
         '2024-01-21 12:15:00',
         NULL
     ),
+    -- 13: misconfigured TL -> Humacao (36)
     (
         'Misconfigured Traffic Light',
         'Traffic light timing misconfigured causing traffic',
@@ -905,12 +816,13 @@ VALUES (
         18,
         3,
         NULL,
-        13,
+        36,
         NULL,
         NULL,
         '2024-01-16 08:00:00',
         NULL
     ),
+    -- 14: "in Ponce" -> Ponce (58)
     (
         'Obstructed Ditch',
         'Ditch obstructed with debris in Ponce',
@@ -919,12 +831,13 @@ VALUES (
         19,
         NULL,
         NULL,
-        14,
+        58,
         NULL,
         NULL,
         '2024-01-22 14:30:00',
         NULL
     ),
+    -- 15: park -> Mayagüez (50)
     (
         'Neglected Recreation Area',
         'Children''s park with trash and damaged equipment',
@@ -933,12 +846,13 @@ VALUES (
         20,
         4,
         4,
-        15,
+        50,
         NULL,
         4,
         '2024-01-07 16:20:00',
         '2024-01-14 11:30:00'
     ),
+    -- 16: leaking hydrant -> Cabo Rojo (12)
     (
         'Leaking Fire Hydrant',
         'Fire hydrant with constant leak wasting water',
@@ -947,12 +861,13 @@ VALUES (
         21,
         NULL,
         NULL,
-        16,
+        12,
         NULL,
         NULL,
         '2024-01-23 10:45:00',
         NULL
     ),
+    -- 17: insufficient lighting -> Yauco (78)
     (
         'Insufficient Night Lighting',
         'Dark area due to lack of public lighting',
@@ -961,12 +876,13 @@ VALUES (
         22,
         5,
         NULL,
-        17,
+        78,
         NULL,
         NULL,
         '2024-01-17 18:30:00',
         NULL
     ),
+    -- 18: missing signage -> San Germán (64)
     (
         'Missing Signage',
         'Missing signage on dangerous curve',
@@ -975,12 +891,13 @@ VALUES (
         23,
         NULL,
         NULL,
-        18,
+        64,
         NULL,
         NULL,
         '2024-01-24 07:15:00',
         NULL
     ),
+    -- 19: slippery pavement -> Aguadilla (3)
     (
         'Slippery Pavement',
         'Slippery pavement after rains',
@@ -989,12 +906,13 @@ VALUES (
         24,
         1,
         1,
-        19,
+        3,
         NULL,
         5,
         '2024-01-09 12:00:00',
         '2024-01-16 15:45:00'
     ),
+    -- 20: broken trash container -> Toa Baja (70)
     (
         'Broken Trash Container',
         'Public trash container vandalized',
@@ -1003,12 +921,13 @@ VALUES (
         25,
         NULL,
         NULL,
-        20,
+        70,
         NULL,
         NULL,
         '2024-01-25 13:20:00',
         NULL
     ),
+    -- 21: loose wiring -> Loíza (45)
     (
         'Loose Wiring',
         'Loose and dangerous electrical wiring',
@@ -1017,12 +936,13 @@ VALUES (
         26,
         2,
         NULL,
-        21,
+        45,
         NULL,
         NULL,
         '2024-01-11 09:30:00',
         NULL
     ),
+    -- 22: dangerous school intersection -> Manatí (47)
     (
         'Dangerous Intersection',
         'Intersection without traffic light in school area',
@@ -1031,12 +951,13 @@ VALUES (
         27,
         NULL,
         NULL,
-        22,
+        47,
         NULL,
         NULL,
         '2024-01-26 15:00:00',
         NULL
     ),
+    -- 23: insufficient drainage -> Fajardo (27)
     (
         'Insufficient Drainage',
         'Drainage system insufficient for heavy rains',
@@ -1045,12 +966,13 @@ VALUES (
         28,
         3,
         NULL,
-        23,
+        27,
         NULL,
         NULL,
         '2024-01-18 11:45:00',
         NULL
     ),
+    -- 24: debris on public road -> Rincón (60)
     (
         'Debris on Public Road',
         'Construction debris on public sidewalk',
@@ -1059,12 +981,13 @@ VALUES (
         29,
         4,
         4,
-        24,
+        60,
         NULL,
         4,
         '2024-01-06 14:10:00',
         '2024-01-13 09:20:00'
     ),
+    -- 25: vacant lot -> Hatillo (34)
     (
         'Lack of Lot Maintenance',
         'Vacant lot with high weeds and mosquito breeding grounds',
@@ -1073,7 +996,7 @@ VALUES (
         30,
         NULL,
         NULL,
-        25,
+        34,
         NULL,
         NULL,
         '2024-01-27 08:30:00',

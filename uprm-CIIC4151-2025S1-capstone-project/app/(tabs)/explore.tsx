@@ -297,6 +297,13 @@ export default function ReportScreen() {
     router.push("/(modals)/report-form");
   };
 
+  const onSelectFilter = (value: StatusFilter) => {
+    setMenuVisible(false);
+    setStatusFilter(value);
+    // when changing the filter, clear search
+    if (query) setQuery("");
+  };
+
   const renderReportItem = ({ item }: { item: ReportData }) => (
     <ReportCard
       report={{ ...item, category: item.category as ReportCategory }}

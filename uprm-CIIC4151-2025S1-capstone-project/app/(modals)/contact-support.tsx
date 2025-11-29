@@ -21,7 +21,7 @@ export default function ContactSupportModal() {
         `Hello Support Team,\n\nI need assistance with:\n\n\n\nUser Information:\n- Email: ${userEmail}\n- App Version: 1.0.0\n\nThank you!`
       );
 
-      const mailtoUrl = `mailto:support@communityreports.com?subject=${subject}&body=${body}`;
+      const mailtoUrl = `mailto:reporteciudadano.uprm@gmail.com?subject=${subject}&body=${body}`;
 
       const canOpen = await Linking.canOpenURL(mailtoUrl);
       if (canOpen) {
@@ -53,7 +53,7 @@ export default function ContactSupportModal() {
   };
 
   const handleWebsitePress = () => {
-    Linking.openURL("https://www.communityreports.com/support");
+    Linking.openURL("http://github.com/Jonathan-Rod/uprm-CIIC4151-2025S1-capstone-project/blob/main/README.md");
   };
 
   const handleFAQPress = () => {

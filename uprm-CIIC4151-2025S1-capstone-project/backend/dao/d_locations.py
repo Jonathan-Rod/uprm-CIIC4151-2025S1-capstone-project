@@ -32,22 +32,25 @@ class LocationsDAO:
             cur.execute(query, (location_id,))
             return cur.fetchone()
 
-    def create_location(self, latitude, longitude):
+    def create_location(self, city, latitude, longitude):
         query = """
-            INSERT INTO location (latitude, longitude)
-            VALUES (%s, %s)
+            INSERT INTO location (city, latitude, longitude)
+            VALUES (%s,%s, %s)
             RETURNING *
         """
         with self.conn.cursor() as cur:
-            cur.execute(query, (latitude, longitude))
+            cur.execute(query, (city, latitude, longitude))
             self.conn.commit()
             return cur.fetchone()
 
-    def update_location(self, location_id, latitude=None, longitude=None):
+    def update_location(self, location_id, city=None, latitude=None, longitude=None):
         # Build dynamic query based on provided fields
         fields = []
         params = []
 
+        if city is not None:
+            fields.append("city = %s")
+            params.append(city)
         if latitude is not None:
             fields.append("latitude = %s")
             params.append(latitude)

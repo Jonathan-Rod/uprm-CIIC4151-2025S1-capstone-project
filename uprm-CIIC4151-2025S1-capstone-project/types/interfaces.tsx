@@ -50,6 +50,7 @@ export interface UserSession {
 
 export interface LocationData {
   id: number;
+  city: string;
   latitude: number;
   longitude: number;
   address?: string;
@@ -229,6 +230,17 @@ export interface LocationSearchResult {
   longitude: number;
   address: string;
   distance?: number;
+}
+
+export interface LocationWithReports extends LocationData {
+  report_count: number;
+}
+
+export interface LocationsWithReportsResponse {
+  locations: LocationWithReports[];
+  totalPages: number;
+  currentPage: number;
+  totalCount: number;
 }
 
 // Filter and Search types
