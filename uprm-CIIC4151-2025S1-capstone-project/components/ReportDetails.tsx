@@ -1,9 +1,9 @@
 // components/ReportDetails.tsx
-import { View, StyleSheet, Linking } from "react-native";
-import { Text, Chip, Button } from "react-native-paper";
+import { View, StyleSheet } from "react-native";
+import { Text, Chip } from "react-native-paper";
 import { useEffect, useState } from "react";
 import type { ReportData } from "@/types/interfaces";
-import { getUser } from "@/utils/api";
+import { getUser, getLocation } from "@/utils/api";
 import { useAppColors } from "@/hooks/useAppColors";
 
 interface UserDetails {
@@ -18,14 +18,87 @@ interface ReportDetailsProps {
   ratingCount: number;
 }
 
+// ----------------------
+// Styles
+// ----------------------
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    reportCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    // Header Section
+    headerSection: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 12,
+    },
+    userInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
+    userAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    userInitials: { color: colors.textInverse, fontWeight: "600", fontSize: 16 },
+    userName: { fontWeight: "600", color: colors.text, marginBottom: 2 },
+    timestamp: { color: colors.textMuted, fontSize: 12 },
+    statusChip: { height: 24 },
+    statusText: { color: colors.textInverse, fontSize: 10, fontWeight: "600" },
+
+    // Content Section
+    title: { fontWeight: "700", color: colors.text, marginBottom: 8, lineHeight: 28 },
+    categoryChip: { alignSelf: "flex-start", marginBottom: 16, backgroundColor: colors.chip.background },
+    categoryText: { color: colors.chip.text, fontSize: 12, fontWeight: "500" },
+    description: { color: colors.textSecondary, lineHeight: 20, marginBottom: 16 },
+
+    // Stats Section
+    statsSection: {
+      flexDirection: "row",
+      justifyContent: "space-around",
+      paddingVertical: 16,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 16,
+    },
+    statItem: { alignItems: "center" },
+    statLabel: { color: colors.textMuted, marginBottom: 4 },
+    statValue: { color: colors.text, fontWeight: "600" },
+
+    // Location Section
+    locationSection: { marginBottom: 16 },
+    sectionTitle: { fontWeight: "600", color: colors.text, marginBottom: 8 },
+    locationText: { color: colors.text, fontSize: 14, fontWeight: "500" },
+
+    // Admin Section
+    adminSection: { borderTopWidth: 1, borderColor: colors.border, paddingTop: 16 },
+    adminItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+    adminLabel: { color: colors.textMuted },
+    adminValue: { color: colors.text, fontWeight: "500" },
+  });
+
+// ----------------------
+// Component
+// ----------------------
 export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
   const { colors } = useAppColors();
-  const [userDetails, setUserDetails] = useState<{
-    [key: number]: UserDetails;
-  }>({});
+  const styles = createStyles(colors);
+
+  const [userDetails, setUserDetails] = useState<{ [key: number]: UserDetails }>({});
+  const [locationString, setLocationString] = useState<string>("Loading location...");
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Cargar detalles de usuarios
+  // Load user details
   useEffect(() => {
     const loadUserDetails = async () => {
       setLoadingUsers(true);
@@ -42,10 +115,7 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
             newUserDetails[userId] = user;
           } catch (error) {
             console.error(`Error loading user ${userId}:`, error);
-            newUserDetails[userId] = {
-              id: userId,
-              email: `user${userId}@example.com`,
-            };
+            newUserDetails[userId] = { id: userId, email: `user${userId}@example.com` };
           }
         } else {
           newUserDetails[userId] = userDetails[userId];
@@ -57,7 +127,28 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
     };
 
     loadUserDetails();
-  }, [report.created_by, report.validated_by, report.resolved_by, userDetails]);
+  }, [report.created_by, report.validated_by, report.resolved_by]);
+
+  // Load location string based on location_id
+  useEffect(() => {
+    const loadLocation = async () => {
+      if (report.location) {
+        setLocationString(report.location.city || "Unknown");
+      } else if (report.location_id) {
+        try {
+          const loc = await getLocation(report.location_id);
+          setLocationString(loc?.city || "Unknown");
+        } catch (error) {
+          console.error("Error loading location:", error);
+          setLocationString("Unknown");
+        }
+      } else {
+        setLocationString("Unknown");
+      }
+    };
+
+    loadLocation();
+  }, [report.location, report.location_id]);
 
   const getUserDisplayName = (userId: number) => {
     const user = userDetails[userId];
@@ -98,17 +189,13 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
     });
   };
 
-  const styles = createStyles(colors);
-
   return (
     <View style={styles.reportCard}>
-      {/* Header Section - User and Status */}
+      {/* Header Section */}
       <View style={styles.headerSection}>
         <View style={styles.userInfo}>
           <View style={styles.userAvatar}>
-            <Text style={styles.userInitials}>
-              {getUserInitials(report.created_by)}
-            </Text>
+            <Text style={styles.userInitials}>{getUserInitials(report.created_by)}</Text>
           </View>
           <View>
             <Text variant="titleMedium" style={styles.userName}>
@@ -121,13 +208,10 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
         </View>
         <Chip
           mode="outlined"
-          style={[
-            styles.statusChip,
-            { backgroundColor: getStatusColor(report.status) },
-          ]}
+          style={[styles.statusChip, { backgroundColor: getStatusColor(report.status) }]}
           textStyle={styles.statusText}
         >
-          {""}
+          {report.status.replace("_", " ")}
         </Chip>
       </View>
 
@@ -135,11 +219,7 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
       <Text variant="headlineSmall" style={styles.title}>
         {report.title}
       </Text>
-      <Chip
-        mode="outlined"
-        style={styles.categoryChip}
-        textStyle={styles.categoryText}
-      >
+      <Chip mode="outlined" style={styles.categoryChip} textStyle={styles.categoryText}>
         {report.category}
       </Chip>
 
@@ -184,21 +264,9 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
           <Text variant="titleSmall" style={styles.sectionTitle}>
             Location
           </Text>
-          <Button
-            mode="outlined"
-            icon="map"
-            onPress={() => {
-              if (report.location) {
-                const { latitude, longitude } = report.location;
-                const url = `https://maps.google.com/?q=${latitude},${longitude}`;
-                Linking.openURL(url);
-              }
-            }}
-            style={styles.mapButton}
-            disabled={!report.location}
-          >
-            View on Map
-          </Button>
+          <Text variant="bodyMedium" style={styles.locationText}>
+            {locationString}
+          </Text>
         </View>
       )}
 
@@ -233,140 +301,3 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
     </View>
   );
 };
-
-const createStyles = (colors: any) =>
-  StyleSheet.create({
-    // Report Card Styles
-    reportCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 16,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-
-    // Header Section
-    headerSection: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      marginBottom: 12,
-    },
-    userInfo: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-    },
-    userAvatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.primary,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    userInitials: {
-      color: colors.textInverse,
-      fontWeight: "600",
-      fontSize: 16,
-    },
-    userName: {
-      fontWeight: "600",
-      color: colors.text,
-      marginBottom: 2,
-    },
-    timestamp: {
-      color: colors.textMuted,
-      fontSize: 12,
-    },
-    statusChip: {
-      height: 24,
-    },
-    statusText: {
-      color: colors.textInverse,
-      fontSize: 10,
-      fontWeight: "600",
-    },
-
-    // Content Section
-    title: {
-      fontWeight: "700",
-      color: colors.text,
-      marginBottom: 8,
-      lineHeight: 28,
-    },
-    categoryChip: {
-      alignSelf: "flex-start",
-      marginBottom: 16,
-      backgroundColor: colors.chip.background,
-    },
-    categoryText: {
-      color: colors.chip.text,
-      fontSize: 12,
-      fontWeight: "500",
-    },
-    description: {
-      color: colors.textSecondary,
-      lineHeight: 20,
-      marginBottom: 16,
-    },
-
-    // Stats Section
-    statsSection: {
-      flexDirection: "row",
-      justifyContent: "space-around",
-      paddingVertical: 16,
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderColor: colors.border,
-      marginBottom: 16,
-    },
-    statItem: {
-      alignItems: "center",
-    },
-    statLabel: {
-      color: colors.textMuted,
-      marginBottom: 4,
-    },
-    statValue: {
-      color: colors.text,
-      fontWeight: "600",
-    },
-
-    // Location Section
-    locationSection: {
-      marginBottom: 16,
-    },
-    sectionTitle: {
-      fontWeight: "600",
-      color: colors.text,
-      marginBottom: 8,
-    },
-    mapButton: {
-      alignSelf: "flex-start",
-    },
-
-    // Admin Section
-    adminSection: {
-      borderTopWidth: 1,
-      borderColor: colors.border,
-      paddingTop: 16,
-    },
-    adminItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8,
-    },
-    adminLabel: {
-      color: colors.textMuted,
-    },
-    adminValue: {
-      color: colors.text,
-      fontWeight: "500",
-    },
-  });

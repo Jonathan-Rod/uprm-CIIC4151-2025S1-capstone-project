@@ -5,39 +5,93 @@ from constants import HTTP_STATUS
 
 class LocationsHandler:
 
+    # ---- base mapper (works with your table column order)
+    # Expecting table columns order: id, city, latitude, longitude, address, country (but be defensive)
     def map_to_dict(self, location):
-        """Map database result to dictionary"""
+        """Map database result to dictionary (defensive about tuple length)."""
+        if not location:
+            return None
+
         return {
-            "id": location[0],
-            "city": location[1] if location[1] is not None else None,
-            "latitude": float(location[2]) if location[2] is not None else None,
-            "longitude": float(location[3]) if location[3] is not None else None,
+            "id": location[0] if len(location) > 0 else None,
+            "city": location[1] if len(location) > 1 and location[1] is not None else None,
+            "latitude": float(location[2]) if len(location) > 2 and location[2] is not None else None,
+            "longitude": float(location[3]) if len(location) > 3 and location[3] is not None else None,
+            "address": location[4] if len(location) > 4 and location[4] is not None else None,
+            "country": location[5] if len(location) > 5 and location[5] is not None else None,
         }
 
     def map_to_dict_with_reports(self, location):
-        """Map location with report count to dictionary"""
+        """Map location with report count to dictionary.
+        DAO returns: l.* plus report_count appended at the end -> last element.
+        """
         base_dict = self.map_to_dict(location)
-        if len(location) > 4:  # Includes report_count
-            base_dict["report_count"] = location[4]
+        if base_dict is None:
+            return None
+        # report_count is appended as the last element
+        if len(location) > 0:
+            report_count = location[-1]
+            try:
+                base_dict["report_count"] = int(report_count) if report_count is not None else 0
+            except Exception:
+                base_dict["report_count"] = report_count
+        else:
+            base_dict["report_count"] = 0
         return base_dict
 
     def map_to_dict_with_distance(self, location):
-        """Map location with distance to dictionary"""
+        """Map location with distance to dictionary.
+        DAO returns: SELECT *, <distance> -> distance is last element.
+        """
         base_dict = self.map_to_dict(location)
-        if len(location) > 4:  # Includes distance
-            base_dict["distance_km"] = (
-                float(location[4]) if location[4] is not None else None
-            )
+        if base_dict is None:
+            return None
+        if len(location) > 0:
+            distance = location[-1]
+            try:
+                base_dict["distance_km"] = float(distance) if distance is not None else None
+            except Exception:
+                base_dict["distance_km"] = distance
+        else:
+            base_dict["distance_km"] = None
         return base_dict
 
     def map_to_dict_with_details(self, location):
-        """Map location with address details to dictionary"""
-        base_dict = self.map_to_dict(location)
-        if len(location) > 3:  # Includes address fields
-            base_dict["address"] = location[3]
-            base_dict["city"] = location[4]
-            base_dict["country"] = location[5]
-        return base_dict
+        """Map location with address details to dictionary.
+        Your DAO.get_location_details() returns a custom tuple:
+            (id, latitude, longitude, formatted_address, city, country)
+        This helper detects that shape and maps accordingly; otherwise falls back to map_to_dict.
+        """
+        if not location:
+            return None
+
+        # Detect the special details tuple from DAO: common pattern is len >= 6 and index 1 numeric (latitude)
+        if len(location) >= 6 and isinstance(location[1], (float, int)) or (
+            len(location) >= 6 and (isinstance(location[1], str) and location[1].replace('.', '', 1).lstrip('-').isdigit())
+        ):
+            # Tuple shape: id, latitude, longitude, address, city, country
+            try:
+                return {
+                    "id": location[0],
+                    "latitude": float(location[1]) if location[1] is not None else None,
+                    "longitude": float(location[2]) if location[2] is not None else None,
+                    "address": location[3],
+                    "city": location[4],
+                    "country": location[5],
+                }
+            except Exception:
+                # fallback to safer mapping below if conversion fails
+                pass
+
+        # Fallback to the normal mapping (for standard SELECT * rows)
+        base = self.map_to_dict(location)
+        # If the DAO placed address/city/country after the base columns, map them if present
+        # (map_to_dict already covered address/country when present)
+        return base
+
+    # -----------------------
+    # Handlers
+    # -----------------------
 
     def get_all_locations(self, page=1, limit=10):
         try:
@@ -85,6 +139,8 @@ class LocationsHandler:
             if not data:
                 return jsonify({"error_msg": "Missing data"}), HTTP_STATUS.BAD_REQUEST
 
+            # Accept optional city if provided (handler was not extracting it previously)
+            city = data.get("city")
             required_fields = ["latitude", "longitude"]
             for field in required_fields:
                 if field not in data:
@@ -116,7 +172,9 @@ class LocationsHandler:
                 )
 
             dao = LocationsDAO()
-            inserted_location = dao.create_location(latitude, longitude)
+            # CALL DAO with the signature it expects: (city, latitude, longitude)
+            # If city is None, pass None (DAO will insert NULL into city)
+            inserted_location = dao.create_location(city, latitude, longitude)
 
             if not inserted_location:
                 return (
@@ -142,10 +200,11 @@ class LocationsHandler:
                     HTTP_STATUS.NOT_FOUND,
                 )
 
+            # Extract fields and validate
+            city = data.get("city")
             latitude = data.get("latitude")
             longitude = data.get("longitude")
 
-            # Validate coordinates if provided
             if latitude is not None:
                 if not isinstance(latitude, (int, float)):
                     return (
@@ -178,7 +237,8 @@ class LocationsHandler:
                         HTTP_STATUS.BAD_REQUEST,
                     )
 
-            updated_location = dao.update_location(location_id, latitude, longitude)
+            # Use keyword args so order matches DAO signature: (location_id, city=None, latitude=None, longitude=None)
+            updated_location = dao.update_location(location_id, city=city, latitude=latitude, longitude=longitude)
 
             if not updated_location:
                 return (
@@ -218,16 +278,12 @@ class LocationsHandler:
         try:
             latitude = request.args.get("latitude", type=float)
             longitude = request.args.get("longitude", type=float)
-            radius = request.args.get(
-                "radius", default=1, type=float
-            )  # Default 1km radius
+            radius = request.args.get("radius", default=1, type=float)  # Default 1km radius
             limit = request.args.get("limit", default=20, type=int)
 
             if latitude is None or longitude is None:
                 return (
-                    jsonify(
-                        {"error_msg": "Latitude and longitude parameters are required"}
-                    ),
+                    jsonify({"error_msg": "Latitude and longitude parameters are required"}),
                     HTTP_STATUS.BAD_REQUEST,
                 )
 
@@ -241,9 +297,7 @@ class LocationsHandler:
             dao = LocationsDAO()
             locations = dao.search_locations_nearby(latitude, longitude, radius, limit)
 
-            locations_dict_list = [
-                self.map_to_dict_with_distance(location) for location in locations
-            ]
+            locations_dict_list = [self.map_to_dict_with_distance(location) for location in locations]
 
             return (
                 jsonify(
@@ -269,9 +323,7 @@ class LocationsHandler:
             total_count = dao.get_total_location_count()
             total_pages = (total_count + limit - 1) // limit
 
-            locations_dict_list = [
-                self.map_to_dict_with_reports(location) for location in locations
-            ]
+            locations_dict_list = [self.map_to_dict_with_reports(location) for location in locations]
 
             return (
                 jsonify(

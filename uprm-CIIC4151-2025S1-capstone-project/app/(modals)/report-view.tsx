@@ -12,6 +12,7 @@ import { Button, Text, ActivityIndicator, Snackbar } from "react-native-paper";
 import { useEffect, useState } from "react";
 import {
   getReport,
+  getLocation,
   buildImageUrl,
   togglePinReport,
   toggleRating,
@@ -19,7 +20,7 @@ import {
   checkReportPinned,
   checkReportRated,
 } from "@/utils/api";
-import type { ReportData, ReportStatus } from "@/types/interfaces";
+import type { ReportData, ReportStatus, LocationData } from "@/types/interfaces";
 import { useAppColors } from "@/hooks/useAppColors";
 import { useAuth } from "@/hooks/useAuth";
 import { ReportActionBar } from "@/components/ReportActionBar";
@@ -47,24 +48,42 @@ export default function ReportViewModal() {
       setLoading(true);
       setError("");
       setImageError(false);
+
+      // 1️⃣ Load report
       const data = await getReport(Number(id));
+
+      // 2️⃣ Load full location object if report has location
+      if (data.location) {
+        try {
+          const loc: LocationData | null = await getLocation(data.location);
+          if (loc) {
+            data.location = loc;
+          } else {
+            data.location = { id: 0, city: "Unknown", latitude: 0, longitude: 0 };
+          }
+        } catch (err) {
+          console.error("Error fetching location:", err);
+          data.location = { id: 0, city: "Unknown", latitude: 0, longitude: 0 };
+        }
+      } else {
+        data.location = { id: 0, city: "Unknown", latitude: 0, longitude: 0 };
+      }
+
       setReport(data);
 
-      // Check if report is pinned and rated by current user
+      // 3️⃣ Check pinned/rated status
       if (currentUser) {
         try {
           const [pinnedStatus, ratedStatus] = await Promise.all([
-            checkReportPinned(Number(id)),
-            checkReportRated(Number(id)),
+            checkReportPinned(data.id),
+            checkReportRated(data.id),
           ]);
           setIsPinned(pinnedStatus.pinned);
           setIsRated(ratedStatus.rated);
           setRatingCount(ratedStatus.rating);
         } catch (err) {
           console.error("Error checking report status:", err);
-          if (data.rating !== undefined) {
-            setRatingCount(data.rating);
-          }
+          if (data.rating !== undefined) setRatingCount(data.rating);
         }
       } else if (data.rating !== undefined) {
         setRatingCount(data.rating);
@@ -80,7 +99,6 @@ export default function ReportViewModal() {
 
   useEffect(() => {
     if (id) loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, currentUser]);
 
   const onRefresh = async () => {
@@ -88,7 +106,7 @@ export default function ReportViewModal() {
     await loadReport();
   };
 
-  // Action handlers
+  // Action handlers (pin, rate, edit, status)
   const handleEdit = () => {
     if (!report) return;
     // TODO: Navigate to edit screen
@@ -143,14 +161,12 @@ export default function ReportViewModal() {
   const showSnackbar = (message: string) => {
     setSnackbar({ visible: true, message });
   };
-
   const hideSnackbar = () => {
     setSnackbar({ visible: false, message: "" });
   };
 
   const styles = createStyles(colors);
 
-  // finalImageUri: build full URL when report has image
   const rawImageUrl = report?.image_url ?? "";
   const finalImageUri = rawImageUrl ? buildImageUrl(rawImageUrl) : undefined;
 
@@ -188,7 +204,6 @@ export default function ReportViewModal() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Button
           mode="text"
@@ -217,7 +232,6 @@ export default function ReportViewModal() {
           <ErrorState />
         ) : report ? (
           <View style={styles.reportContent}>
-            {/* ✅ FULL, CENTERED, NON-CROPPED IMAGE */}
             {finalImageUri && !imageError && (
               <View style={styles.imageWrap}>
                 <View style={styles.imageContainer}>
@@ -231,7 +245,6 @@ export default function ReportViewModal() {
               </View>
             )}
 
-            {/* Action Bar */}
             <ReportActionBar
               report={report}
               onEdit={handleEdit}
@@ -245,7 +258,6 @@ export default function ReportViewModal() {
               ratingCount={ratingCount}
             />
 
-            {/* Report Details Component */}
             <ReportDetails report={report} ratingCount={ratingCount} />
           </View>
         ) : (
@@ -263,15 +275,11 @@ export default function ReportViewModal() {
         )}
       </ScrollView>
 
-      {/* Snackbar for feedback */}
       <Snackbar
         visible={snackbar.visible}
         onDismiss={hideSnackbar}
         duration={3000}
-        action={{
-          label: "OK",
-          onPress: hideSnackbar,
-        }}
+        action={{ label: "OK", onPress: hideSnackbar }}
       >
         {snackbar.message}
       </Snackbar>
