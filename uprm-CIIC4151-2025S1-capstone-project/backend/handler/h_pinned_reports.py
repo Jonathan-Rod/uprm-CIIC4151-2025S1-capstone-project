@@ -40,7 +40,7 @@ class PinnedReportsHandler:
                 )
 
             try:
-                report_id = data["id"]
+                report_id = data["report_id"]
             except KeyError:
                 return (
                     jsonify({"error_msg": "Missing field: report_id"}),
