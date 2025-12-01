@@ -50,7 +50,7 @@ CREATE TABLE location (
     latitude DECIMAL(9, 6) NOT NULL,
     longitude DECIMAL(9, 6) NOT NULL,
     address TEXT,
-    city VARCHAR(100),
+    -- city was here but I deleted it
     country VARCHAR(100)
 );
 

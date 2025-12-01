@@ -257,7 +257,6 @@ const createStyles = (colors: any) =>
     },
     cardContentNoImage: {
       paddingTop: 16,
-      paddingTop: 16,
     },
     headerRow: {
       flexDirection: "row",

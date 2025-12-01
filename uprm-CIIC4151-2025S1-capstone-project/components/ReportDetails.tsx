@@ -25,39 +25,46 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
   }>({});
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // Cargar detalles de usuarios
-  useEffect(() => {
-    const loadUserDetails = async () => {
-      setLoadingUsers(true);
-      const userIds = [report.created_by];
-      if (report.validated_by) userIds.push(report.validated_by);
-      if (report.resolved_by) userIds.push(report.resolved_by);
+useEffect(() => {
+  const loadUserDetails = async () => {
+    if (!report) return;
+    setLoadingUsers(true);
+    const userIds = [
+      report.created_by,
+      report.validated_by,
+      report.resolved_by,
+    ].filter(Boolean) as number[];
 
-      const newUserDetails: { [key: number]: UserDetails } = {};
+    const newUserDetails: { [key: number]: UserDetails } = {};
 
-      for (const userId of userIds) {
-        if (!userDetails[userId]) {
-          try {
-            const user = await getUser(userId);
-            newUserDetails[userId] = user;
-          } catch (error) {
-            console.error(`Error loading user ${userId}:`, error);
-            newUserDetails[userId] = {
-              id: userId,
-              email: `user${userId}@example.com`,
-            };
-          }
-        } else {
-          newUserDetails[userId] = userDetails[userId];
+    for (const userId of userIds) {
+      if (!userDetails[userId]) {
+        try {
+          const user = await getUser(userId);
+          newUserDetails[userId] = user;
+        } catch (error) {
+          console.error(`Error loading user ${userId}:`, error);
+          newUserDetails[userId] = {
+            id: userId,
+            email: `user${userId}@example.com`,
+          };
         }
       }
+    }
 
+    // Only update state if we actually fetched something new
+    if (Object.keys(newUserDetails).length > 0) {
       setUserDetails((prev) => ({ ...prev, ...newUserDetails }));
-      setLoadingUsers(false);
-    };
+    }
+    setLoadingUsers(false);
+  };
 
-    loadUserDetails();
-  }, [report.created_by, report.validated_by, report.resolved_by, userDetails]);
+  loadUserDetails();
+
+  // We intentionally do NOT include userDetails to avoid an infinite loop
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [report.created_by, report.validated_by, report.resolved_by]);
+
 
   const getUserDisplayName = (userId: number) => {
     const user = userDetails[userId];
