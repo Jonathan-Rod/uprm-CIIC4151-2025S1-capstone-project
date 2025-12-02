@@ -22,7 +22,7 @@ CREATE TABLE users (
     PASSWORD VARCHAR(255) NOT NULL,
     ADMIN BOOLEAN DEFAULT FALSE,
     suspended BOOLEAN DEFAULT FALSE,
-    pinned BOOLEAN DEFAULT FALSE,
+    pinned BOOLEAN DEFAULT FALSE, -- not used
     total_reports INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -92,7 +92,7 @@ CREATE TABLE reports (
     resolved_at TIMESTAMP,
     location INTEGER REFERENCES location (id),
     image_url VARCHAR,
-    rating INTEGER CHECK (
+    rating INTEGER CHECK ( -- TODO rating integer default 0
         rating >= 1
         AND rating <= 5
     )
@@ -110,7 +110,7 @@ CREATE TABLE department_admins (
 CREATE TABLE pinned_reports (
     user_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
     report_id INTEGER REFERENCES reports (id) ON DELETE CASCADE,
-    pinned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    pinned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- not used 
     PRIMARY KEY (user_id, report_id)
 );
 
@@ -622,7 +622,7 @@ INSERT INTO
         resolved_by,
         location,
         image_url,
-        rating,
+        rating, -- aqui deberia ser 0 no null
         created_at,
         resolved_at
     )

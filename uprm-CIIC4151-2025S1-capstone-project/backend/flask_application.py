@@ -99,7 +99,9 @@ def handle_reports():
         limit = request.args.get("limit", default=10, type=int)
         sort = request.args.get("sort")
         admin_id = request.args.get("admin_id", type=int)
-        return handler.get_all_reports(page, limit, sort, admin_id)
+        location_id = request.args.get("location_id", type=int)
+        location_city = request.args.get("location_city")  # e.g. "Carolina"
+        return handler.get_all_reports(page, limit, sort, admin_id, location_id, location_city)
 
 
 @app.route("/reports/<int:report_id>", methods=["GET", "PUT", "DELETE"])
@@ -470,7 +472,9 @@ def search_reports():
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
     admin_id = request.args.get("admin_id", type=int)
-    return handler.search_reports(query, page, limit, status, category, sort, admin_id)
+    location_id = request.args.get("location_id", type=int)
+    location_city = request.args.get("location_city")
+    return handler.search_reports(query, page, limit, status, category, sort, admin_id, location_id, location_city)
 
 
 @app.route("/reports/filter", methods=["GET"])
@@ -482,7 +486,10 @@ def filter_reports():
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
     admin_id = request.args.get("admin_id", type=int)
-    return handler.filter_reports(status, category, page, limit, sort, admin_id)
+    location_id = request.args.get("location_id", type=int)
+    location_city = request.args.get("location_city")
+    return handler.filter_reports(status, category, page, limit, sort, admin_id, location_id, location_city)
+
 
 
 @app.route("/reports/user/<int:user_id>", methods=["GET"])

@@ -43,37 +43,37 @@ export default function RootLayout() {
 
     const checkAuth = async () => {
       try {
-        console.log("🔍 Starting auth check...");
+        console.log("Starting auth check...");
         setDebugInfo("Checking stored credentials...");
 
         const credentials = await getStoredCredentials();
-        console.log("📝 Credentials found:", credentials);
+        console.log("Credentials found:", credentials);
 
         if (!isMounted) return;
 
         if (credentials) {
           setDebugInfo(`Found credentials for: ${credentials.email}`);
-          console.log("✅ Credentials found, redirecting to home...");
+          console.log("Credentials found, redirecting to home...");
 
           // Small delay to ensure navigation is ready
           setTimeout(() => {
             if (isMounted) {
               router.replace("/(tabs)/home");
-              console.log("🎯 Navigation to home completed");
+              console.log("Navigation to home completed");
             }
           }, 100);
         } else {
           setDebugInfo("No credentials found");
-          console.log("❌ No credentials found, redirecting to login...");
+          console.log("No credentials found, redirecting to login...");
           setTimeout(() => {
             if (isMounted) {
               router.replace("/");
-              console.log("🎯 Navigation to login completed");
+              console.log("Navigation to login completed");
             }
           }, 100);
         }
       } catch (error) {
-        console.error("🚨 Error checking auth:", error);
+        console.error("Error checking auth:", error);
         setDebugInfo(
           `Error: ${error instanceof Error ? error.message : "Unknown error"}`
         );
@@ -82,7 +82,7 @@ export default function RootLayout() {
         }
       } finally {
         if (isMounted) {
-          console.log("🏁 Auth check completed");
+          console.log("Auth check completed");
           setIsCheckingAuth(false);
         }
       }
@@ -91,7 +91,7 @@ export default function RootLayout() {
     // Add a timeout fallback
     const timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.log("🕒 Auth check timeout - forcing completion");
+        console.log("Auth check timeout - forcing completion");
         setIsCheckingAuth(false);
       }
     }, 3000);

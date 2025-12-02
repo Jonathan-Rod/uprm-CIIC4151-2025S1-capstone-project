@@ -1,3 +1,6 @@
+// TODO We need to refactor the display of message to properly get
+// handle success
+
 import { useAppColors } from "@/hooks/useAppColors";
 import { createUser } from "@/utils/api";
 import { saveCredentials } from "@/utils/auth";
@@ -41,26 +44,26 @@ export default function SignInForm({ onSuccess }: SignInFormProps) {
 
       console.log("User creation response:", response);
 
-      if (!response) {
-        setErrorMessage("Failed to create account");
-        Alert.alert("Registration Failed", "Failed to create account");
-        return;
-      }
+      // if (!response) {
+      //   setErrorMessage("Failed to create account");
+      //   // Alert.alert("Registration Failed", "Failed to create account");
+      //   return;
+      // }
 
       // Handle successful user creation
-      if (response && response.id) {
+      if (response?.id) {
         // Save credentials
         await saveCredentials(response.user.id, email, password, response.user.admin, response.user.suspended);
 
-        Alert.alert("Success", "Account created successfully!");
+        // Alert.alert("Success", "Account created successfully!");
         onSuccess();
       } else {
         const errorMsg = response?.error_msg || "Failed to create account";
         setErrorMessage(errorMsg);
-        Alert.alert("Registration Failed", errorMsg);
+        // Alert.alert("Registration Failed", errorMsg);
       }
     } catch (error: any) {
-      console.error("Registration error:", error);
+      // console.error("Registration error:", error);
 
       let message = "Network error. Please try again.";
 
@@ -76,7 +79,7 @@ export default function SignInForm({ onSuccess }: SignInFormProps) {
       }
 
       setErrorMessage(message);
-      Alert.alert("Registration Error", message);
+      // Alert.alert("Registration Error", message);
     } finally {
       setLoading(false);
     }

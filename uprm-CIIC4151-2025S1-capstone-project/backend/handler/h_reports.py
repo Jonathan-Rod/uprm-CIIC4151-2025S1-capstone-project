@@ -50,15 +50,21 @@ class ReportsHandler:
             # Not an administrator → no restriction
             return None
 
-        # Your existing code assumes:
-        # 0: id, 1: user_id, 2: department, 3+: user fields...
         department = info.get("department")
         return self._department_allowed_categories(department)
 
     # -----------------------------------
-    # Existing mapping logic
+    # Mapping logic (updated indexes)
     # -----------------------------------
     def map_to_dict(self, report):
+        """
+        Updated mapping to account for DAO returning location.city as `location_city`.
+        DAO row layout expected:
+          0 id, 1 title, 2 description, 3 status, 4 category,
+          5 created_by, 6 validated_by, 7 resolved_by,
+          8 created_at, 9 resolved_at,
+          10 location (id), 11 location_city, 12 image_url, 13 rating
+        """
         return {
             "id": report[0],
             "title": report[1],
@@ -71,14 +77,18 @@ class ReportsHandler:
             "created_at": report[8],
             "resolved_at": report[9],
             "location": report[10],
-            "image_url": report[11],
-            "rating": report[12],
+            "location_city": report[11],
+            "image_url": report[12],
+            "rating": report[13],
         }
 
     # -----------------------------------
-    # GET /reports  (with optional admin_id)
+    # GET /reports  (with optional admin_id, location filters)
     # -----------------------------------
-    def get_all_reports(self, page=1, limit=10, sort=None, admin_id=None):
+    def get_all_reports(self, page=1, limit=10, sort=None, admin_id=None, location_id=None, location_city=None):
+        """
+        Added optional location_id and location_city params. Pass whichever the frontend provides.
+        """
         try:
             offset = (page - 1) * limit
             dao = ReportsDAO()
@@ -90,9 +100,13 @@ class ReportsHandler:
                 offset,
                 sort=sort,
                 allowed_categories=allowed_categories,
+                location_id=location_id,
+                location_city=location_city,
             )
             total_count = dao.get_total_report_count(
-                allowed_categories=allowed_categories
+                allowed_categories=allowed_categories,
+                location_id=location_id,
+                location_city=location_city,
             )
             total_pages = (total_count + limit - 1) // limit
             reports_dict_list = [self.map_to_dict(report) for report in reports]
@@ -276,7 +290,7 @@ class ReportsHandler:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
     # ---------- UNIFIED ENTRY POINT ----------
-    # /reports/search?q=&status=&category=&sort=&admin_id=
+    # /reports/search?q=&status=&category=&sort=&admin_id=&location_id=&location_city=
     def search_reports(
         self,
         query=None,
@@ -286,12 +300,15 @@ class ReportsHandler:
         category=None,
         sort=None,
         admin_id=None,  # 👈 NEW
+        location_id=None,
+        location_city=None,
     ):
         """
         Handles:
         - search only      (/reports/search?q=...)
         - filter only      (/reports/search?status=... [&category=...] [&sort=asc|desc])
         - search + filter  (/reports/search?q=...&status=... [&category=...] [&sort=...])
+        - location filters: pass location_id (exact) or location_city (name)
         - AND applies backend admin category restriction if admin_id is provided.
         """
         try:
@@ -300,10 +317,10 @@ class ReportsHandler:
             c = (category or "").strip()
             order = (sort or "").strip().lower()  # 'asc' or 'desc'
 
-            if not q and not s and not c:
+            if not q and not s and not c and not location_id and not location_city:
                 return (
                     jsonify(
-                        {"error_msg": "Provide at least one of: q, status, category"}
+                        {"error_msg": "Provide at least one of: q, status, category, location_id, location_city"}
                     ),
                     HTTP_STATUS.BAD_REQUEST,
                 )
@@ -345,6 +362,8 @@ class ReportsHandler:
                 offset=offset,
                 sort=order if order in ("asc", "desc") else None,
                 allowed_categories=allowed_categories,  # 👈 pass restriction
+                location_id=location_id,
+                location_city=location_city,
             )
 
             total_pages = (total_count + limit - 1) // limit
@@ -368,8 +387,8 @@ class ReportsHandler:
         except Exception as e:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
-    # Backward-compat: /reports/filter → delegates to search_reports (now with admin)
-    def filter_reports(self, status, category, page=1, limit=10, sort=None, admin_id=None):
+    # Backward-compat: /reports/filter → delegates to search_reports (now with admin + location)
+    def filter_reports(self, status, category, page=1, limit=10, sort=None, admin_id=None, location_id=None, location_city=None):
         return self.search_reports(
             query=None,
             page=page,
@@ -378,6 +397,8 @@ class ReportsHandler:
             category=category,
             sort=sort,
             admin_id=admin_id,
+            location_id=location_id,
+            location_city=location_city,
         )
 
     def get_reports_by_user(self, user_id, page=1, limit=10):
@@ -665,6 +686,58 @@ class ReportsHandler:
             return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
 
     def get_assigned_reports(self, admin_id, page=1, limit=10):
+        try:
+            offset = (page - 1) * limit
+            dao = ReportsDAO()
+            reports = dao.get_assigned_reports(admin_id, limit, offset)
+            total_count = dao.get_assigned_reports_count(admin_id)
+            total_pages = (total_count + limit - 1) // limit
+            reports_dict_list = [self.map_to_dict(report) for report in reports]
+            return (
+                jsonify(
+                    {
+                        "reports": reports_dict_list,
+                        "totalPages": total_pages,
+                        "currentPage": page,
+                        "totalCount": total_count,
+                        "admin_id": admin_id,
+                    }
+                ),
+                HTTP_STATUS.OK,
+            )
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    # -------------------------------
+    # Location search endpoints (new)
+    # -------------------------------
+    def search_locations(self, q: str | None = None, limit: int = 20, prefix: bool = True):
+        """
+        Return list of {id, city} for exact location selection.
+        - q: query string
+        - prefix: True for 'q%' (recommended UX), False for '%q%'
+        """
+        try:
+            dao = ReportsDAO()
+            results = dao.search_locations_by_city(q=q, limit=limit, prefix=prefix)
+            return jsonify({"locations": results}), HTTP_STATUS.OK
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    def search_cities(self, q: str | None = None, limit: int = 20, prefix: bool = True, include_counts: bool = False):
+        """
+        Return distinct city names. If include_counts True, returns {"city","count"}.
+        Use this if you want city-level filtering instead of location.id filtering.
+        """
+        try:
+            dao = ReportsDAO()
+            results = dao.search_cities(q=q, limit=limit, prefix=prefix, include_counts=include_counts)
+            return jsonify({"cities": results}), HTTP_STATUS.OK
+        except Exception as e:
+            return jsonify({"error_msg": str(e)}), HTTP_STATUS.INTERNAL_SERVER_ERROR
+
+    def get_assigned_reports(self, admin_id, page=1, limit=10):
+        # (already implemented above) kept for compatibility
         try:
             offset = (page - 1) * limit
             dao = ReportsDAO()

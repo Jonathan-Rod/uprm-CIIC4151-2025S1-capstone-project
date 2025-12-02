@@ -30,7 +30,7 @@ const getApiBaseUrl = () => {
     return webUrl;
   }
 
-  // Para producción
+  // Production
   return "https://reporte-ciudadano-15eb46ea2557.herokuapp.com";
 };
 
@@ -132,12 +132,16 @@ async function request(endpoint: string, method = "GET", body?: any) {
     if (!response.ok) {
       if (response.status === 401)
         throw new Error("Authentication failed - Please log in again");
-      if (response.status === 401)
-        throw new Error("Authentication failed - Please log in again");
       if (response.status === 403) throw new Error("Access forbidden");
       if (response.status === 404) throw new Error("Resource not found");
       if (response.status >= 500) throw new Error("Server error");
-      throw new Error(`API error: ${response.status}`);
+      // try to parse body for error message
+      try {
+        const errJson = await response.json();
+        throw new Error(errJson.error || errJson.error_msg || response.statusText);
+      } catch {
+        throw new Error(`API error: ${response.status}`);
+      }
     }
 
     if (response.status === 204) return null;
@@ -163,7 +167,7 @@ async function request(endpoint: string, method = "GET", body?: any) {
 // =============================================================================
 export async function login(data: { email: string; password: string }) {
   const result = await request("/login", "POST", data);
-  if (result && result.success) return result;
+  if (result && (result.success || result.token || result.id)) return result;
   throw new Error(result?.error_msg || "Login failed");
 }
 
@@ -221,7 +225,9 @@ export async function upgradeToAdmin(userId: number, code: string) {
 export async function getReports(
   page?: number,
   limit?: number,
-  sort?: "asc" | "desc"
+  sort?: "asc" | "desc",
+  location_id?: number,
+  location_city?: string
 ) {
   const params = new URLSearchParams();
   if (page) params.append("page", page.toString());
@@ -230,6 +236,9 @@ export async function getReports(
 
   const creds = await getStoredCredentials();
   if (creds) params.append("admin_id", creds.userId.toString());
+
+  if (location_id) params.append("location_id", String(location_id));
+  if (location_city) params.append("location_city", location_city);
 
   return request(`/reports?${params.toString()}`);
 }
@@ -246,7 +255,7 @@ export async function createReport(data: ReportFormData) {
     ...data,
     user_id: creds.userId,
     image_url: data.image_url?.trim() || null,
-  location_id: data.location_id ?? null,
+    location_id: data.location_id ?? null,
   };
 
   return request("/reports", "POST", payload);
@@ -293,7 +302,9 @@ export async function searchReports(
   category?: string,
   page?: number,
   limit?: number,
-  sort?: "asc" | "desc"
+  sort?: "asc" | "desc",
+  location_id?: number,
+  location_city?: string
 ) {
   const params = new URLSearchParams();
   if (query) params.append("q", query);
@@ -306,6 +317,9 @@ export async function searchReports(
   const creds = await getStoredCredentials();
   if (creds) params.append("admin_id", creds.userId.toString());
 
+  if (location_id) params.append("location_id", String(location_id));
+  if (location_city) params.append("location_city", location_city);
+
   return request(`/reports/search?${params.toString()}`);
 }
 
@@ -314,7 +328,9 @@ export async function filterReports(
   category?: string,
   page?: number,
   limit?: number,
-  sort?: "asc" | "desc"
+  sort?: "asc" | "desc",
+  location_id?: number,
+  location_city?: string
 ) {
   const params = new URLSearchParams();
   if (status) params.append("status", status);
@@ -325,6 +341,9 @@ export async function filterReports(
 
   const creds = await getStoredCredentials();
   if (creds) params.append("admin_id", creds.userId.toString());
+
+  if (location_id) params.append("location_id", String(location_id));
+  if (location_city) params.append("location_city", location_city);
 
   return request(`/reports/filter?${params.toString()}`);
 }
@@ -416,6 +435,46 @@ export async function searchLocations(params: {
   if (params?.limit) searchParams.append("limit", params.limit.toString());
   const query = searchParams.toString();
   return request(`/locations/search${query ? `?${query}` : ""}`);
+}
+
+// =============================================================================
+// LOCATION AUTOCOMPLETE / CITY SEARCH (NEW)
+// =============================================================================
+
+/**
+ * Autocomplete locations by city name.
+ * Calls your backend `/locations/search?q=...&limit=...&prefix=1`
+ * Returns: { locations: [{ id, city }, ...] } or similar - the request wrapper returns parsed JSON.
+ */
+export async function autocompleteLocations(
+  q: string,
+  limit = 20,
+  prefix = true
+): Promise<any> {
+  const params = new URLSearchParams();
+  if (q) params.append("q", q);
+  params.append("limit", String(limit));
+  params.append("prefix", prefix ? "1" : "0");
+  // backend route currently is /locations/search
+  return request(`/locations/search?${params.toString()}`);
+}
+
+/**
+ * Search distinct cities (optionally include counts).
+ * If your backend supports include_counts, it returns [{city, count}, ...].
+ */
+export async function searchCities(
+  q = "",
+  limit = 20,
+  prefix = true,
+  include_counts = false
+) {
+  const params = new URLSearchParams();
+  if (q) params.append("q", q);
+  params.append("limit", String(limit));
+  params.append("prefix", prefix ? "1" : "0");
+  if (include_counts) params.append("include_counts", "1");
+  return request(`/locations/search?${params.toString()}`);
 }
 
 // =============================================================================
@@ -580,17 +639,16 @@ export async function pinReport(data: {
 }) {
   const creds = await getStoredCredentials();
   if (!creds) throw new Error("Not authenticated");
-  if (creds.userId !== data.user_id)
-    throw new Error("User ID mismatch");
+  if (creds.userId !== data.user_id) throw new Error("User ID mismatch");
 
   return request("/pinned-reports", "POST", data);
 }
 
+// TODO check in backend also
 export async function unpinReport(userId: number, reportId: number) {
   const creds = await getStoredCredentials();
   if (!creds) throw new Error("Not authenticated");
-  if (creds.userId !== userId)
-    throw new Error("User ID mismatch");
+  if (creds.userId !== userId) throw new Error("User ID mismatch");
 
   const qs = new URLSearchParams();
   qs.append("user_id", userId.toString());
@@ -617,8 +675,7 @@ export async function getUserPinnedReports(
 export async function checkPinnedStatus(userId: number, reportId: number) {
   const creds = await getStoredCredentials();
   if (!creds) throw new Error("Not authenticated");
-  if (creds.userId !== userId)
-    throw new Error("User ID mismatch");
+  if (creds.userId !== userId) throw new Error("User ID mismatch");
 
   return request(`/pinned-reports/check/${userId}/${reportId}`);
 }
@@ -629,8 +686,7 @@ export async function getPinnedReportDetail(
 ) {
   const creds = await getStoredCredentials();
   if (!creds) throw new Error("Not authenticated");
-  if (creds.userId !== userId)
-    throw new Error("User ID mismatch");
+  if (creds.userId !== userId) throw new Error("User ID mismatch");
 
   return request(`/pinned-reports/${userId}/${reportId}/details`);
 }
@@ -649,8 +705,7 @@ export async function getDepartmentOverviewStats(department: string) {
 export async function getUserStats(userId: number) {
   const creds = await getStoredCredentials();
   if (!creds) throw new Error("Not authenticated");
-  if (creds.userId !== userId)
-    throw new Error("User ID mismatch");
+  if (creds.userId !== userId) throw new Error("User ID mismatch");
 
   return request(`/stats/user/${userId}`);
 }
@@ -793,7 +848,6 @@ export async function changeReportStatus(
 export async function getStatusOptions() {
   return request("/reports/status-options");
 }
-
 
 // TODO Get location details with address
 export async function getLocationDetails(locationId: number): Promise<{

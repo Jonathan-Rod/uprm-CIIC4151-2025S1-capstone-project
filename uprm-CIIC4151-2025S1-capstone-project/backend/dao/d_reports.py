@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from load import load_db
-
+from typing import Optional
 
 def _normalize_sort(sort: str | None) -> str:
     """
@@ -19,6 +19,102 @@ class ReportsDAO:
         self.conn = load_db()
 
     # -------------------------------
+    # Location helpers
+    # -------------------------------
+    def search_locations_by_city(self, q: str | None = None, limit: int = 20, prefix: bool = False):
+        """
+        Return rows from `location` that match the city.
+        Useful when you want a real location.id for each dropdown option.
+        - q: search string
+        - prefix: if True does prefix match (q%), otherwise contains match (%q%)
+        """
+        params = []
+        if q:
+            pattern = f"{q}%" if prefix else f"%{q}%"
+            sql = """
+                SELECT id, city
+                FROM location
+                WHERE city IS NOT NULL AND city ILIKE %s
+                ORDER BY city
+                LIMIT %s
+            """
+            params = [pattern, limit]
+        else:
+            sql = """
+                SELECT id, city
+                FROM location
+                WHERE city IS NOT NULL
+                ORDER BY city
+                LIMIT %s
+            """
+            params = [limit]
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql, params)
+            return [{"id": r[0], "city": r[1]} for r in cur.fetchall()]
+
+    def search_cities(self, q: str | None = None, limit: int = 20, prefix: bool = False, include_counts: bool = False):
+        """
+        Return distinct city names. If include_counts is True, also return how many reports exist per city.
+        Useful for city-level filters where you don't want duplicates because multiple location rows share same city.
+        Returns list of dicts:
+          if include_counts False -> [{"city": "Carolina"} ...]
+          if include_counts True  -> [{"city": "Carolina", "count": 142} ...]
+        """
+        params = []
+        if include_counts:
+            # join to reports to count per city (may be slower; consider caching)
+            if q:
+                pattern = f"{q}%" if prefix else f"%{q}%"
+                sql = """
+                    SELECT l.city, COUNT(r.id) as count
+                    FROM location l
+                    LEFT JOIN reports r ON r.location = l.id
+                    WHERE l.city IS NOT NULL AND l.city ILIKE %s
+                    GROUP BY l.city
+                    ORDER BY l.city
+                    LIMIT %s
+                """
+                params = [pattern, limit]
+            else:
+                sql = """
+                    SELECT l.city, COUNT(r.id) as count
+                    FROM location l
+                    LEFT JOIN reports r ON r.location = l.id
+                    WHERE l.city IS NOT NULL
+                    GROUP BY l.city
+                    ORDER BY l.city
+                    LIMIT %s
+                """
+                params = [limit]
+            with self.conn.cursor() as cur:
+                cur.execute(sql, params)
+                return [{"city": r[0], "count": r[1]} for r in cur.fetchall()]
+        else:
+            if q:
+                pattern = f"{q}%" if prefix else f"%{q}%"
+                sql = """
+                    SELECT DISTINCT city
+                    FROM location
+                    WHERE city IS NOT NULL AND city ILIKE %s
+                    ORDER BY city
+                    LIMIT %s
+                """
+                params = [pattern, limit]
+            else:
+                sql = """
+                    SELECT DISTINCT city
+                    FROM location
+                    WHERE city IS NOT NULL
+                    ORDER BY city
+                    LIMIT %s
+                """
+                params = [limit]
+            with self.conn.cursor() as cur:
+                cur.execute(sql, params)
+                return [{"city": r[0]} for r in cur.fetchall()]
+
+    # -------------------------------
     # Core list/read/write operations
     # -------------------------------
     def get_reports_paginated(
@@ -27,35 +123,50 @@ class ReportsDAO:
         offset: int,
         sort: str | None = None,
         allowed_categories: list[str] | None = None,
+        location_id: int | None = None,
+        location_city: str | None = None,
     ):
-        """Fetch reports with pagination and optional category restriction."""
+        """Fetch reports with pagination and optional category / location restriction."""
         order_dir = _normalize_sort(sort)
         where_clauses: list[str] = []
         params: list = []
 
         if allowed_categories:
-            where_clauses.append("category = ANY(%s)")
+            where_clauses.append("reports.category = ANY(%s)")
             params.append(allowed_categories)
+
+        if location_id is not None:
+            where_clauses.append("reports.location = %s")
+            params.append(location_id)
+
+        if location_city:
+            where_clauses.append("location.city = %s")
+            params.append(location_city)
 
         where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
         query = f"""
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
+            SELECT reports.id, reports.title, reports.description, reports.status, reports.category,
+                   reports.created_by, reports.validated_by, reports.resolved_by,
+                   reports.created_at, reports.resolved_at,
+                   reports.location, location.city AS location_city,
+                   reports.image_url, reports.rating
             FROM reports
+            LEFT JOIN location ON reports.location = location.id
             {where_sql}
-            ORDER BY created_at {order_dir}, id {order_dir}
+            ORDER BY reports.created_at {order_dir}, reports.id {order_dir}
             LIMIT %s OFFSET %s
         """
         params.extend([limit, offset])
 
         with self.conn.cursor() as cur:
             cur.execute(query, params)
-            return cur.fetchall()
+            rows = cur.fetchall()
+            # Return as list of tuples (same form as previous) or map to dict if you prefer
+            return rows
 
-    def get_total_report_count(self, allowed_categories: list[str] | None = None):
-        """Count reports, optionally restricted to a set of categories."""
+    def get_total_report_count(self, allowed_categories: list[str] | None = None, location_id: int | None = None, location_city: str | None = None):
+        """Count reports, optionally restricted to a set of categories or location."""
         where_clauses: list[str] = []
         params: list = []
 
@@ -63,21 +174,39 @@ class ReportsDAO:
             where_clauses.append("category = ANY(%s)")
             params.append(allowed_categories)
 
-        where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-        query = f"SELECT COUNT(*) FROM reports{where_sql}"
+        if location_id is not None:
+            where_clauses.append("location = %s")
+            params.append(location_id)
+
+        if location_city:
+            # need to join location — easiest to use EXISTS or join in count query
+            # I'll join location here
+            where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+            query = f"""
+                SELECT COUNT(*)
+                FROM reports
+                LEFT JOIN location ON reports.location = location.id
+                {where_sql}
+            """
+        else:
+            where_sql = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+            query = f"SELECT COUNT(*) FROM reports{where_sql}"
 
         with self.conn.cursor() as cur:
             cur.execute(query, params)
             return cur.fetchone()[0]
 
     def get_report_by_id(self, report_id: int):
-        """Fetch a single report by ID."""
+        """Fetch a single report by ID (includes location.city)."""
         query = """
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
+            SELECT reports.id, reports.title, reports.description, reports.status, reports.category,
+                   reports.created_by, reports.validated_by, reports.resolved_by,
+                   reports.created_at, reports.resolved_at,
+                   reports.location, location.city AS location_city,
+                   reports.image_url, reports.rating
             FROM reports
-            WHERE id = %s
+            LEFT JOIN location ON reports.location = location.id
+            WHERE reports.id = %s
         """
         with self.conn.cursor() as cur:
             cur.execute(query, (report_id,))
@@ -207,36 +336,56 @@ class ReportsDAO:
         offset: int = 0,
         sort: str | None = None,
         allowed_categories: list[str] | None = None,
+        location_id: int | None = None,
+        location_city: str | None = None,
     ):
-        """Search and filter reports with pagination, sorting, and optional admin restrictions."""
+        """
+        Search and filter reports with pagination, sorting, and optional admin restrictions.
+        You can filter by `location_id` (exact match) or by `location_city` (city name).
+        Returns: (rows, total_count)
+        """
         where = []
         params: list = []
 
         if q:
-            where.append("(title ILIKE %s OR description ILIKE %s)")
+            where.append("(reports.title ILIKE %s OR reports.description ILIKE %s)")
             like = f"%{q}%"
             params.extend([like, like])
         if status:
-            where.append("status = %s")
+            where.append("reports.status = %s")
             params.append(status)
         if category:
-            where.append("category = %s")
+            where.append("reports.category = %s")
             params.append(category)
         if allowed_categories:
-            where.append("category = ANY(%s)")
+            where.append("reports.category = ANY(%s)")
             params.append(allowed_categories)
+        if location_id is not None:
+            where.append("reports.location = %s")
+            params.append(location_id)
+        if location_city:
+            where.append("location.city = %s")
+            params.append(location_city)
 
         where_sql = f" WHERE {' AND '.join(where)}" if where else ""
         order_dir = _normalize_sort(sort)
 
-        count_sql = f"SELECT COUNT(*) FROM reports{where_sql}"
-        data_sql = f"""
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
+        count_sql = f"""
+            SELECT COUNT(*)
             FROM reports
+            LEFT JOIN location ON reports.location = location.id
             {where_sql}
-            ORDER BY created_at {order_dir}, id {order_dir}
+        """
+        data_sql = f"""
+            SELECT reports.id, reports.title, reports.description, reports.status, reports.category,
+                   reports.created_by, reports.validated_by, reports.resolved_by,
+                   reports.created_at, reports.resolved_at,
+                   reports.location, location.city AS location_city,
+                   reports.image_url, reports.rating
+            FROM reports
+            LEFT JOIN location ON reports.location = location.id
+            {where_sql}
+            ORDER BY reports.created_at {order_dir}, reports.id {order_dir}
             LIMIT %s OFFSET %s
         """
 
@@ -267,7 +416,7 @@ class ReportsDAO:
 
     def get_report_rating_stats(self, report_id):
         """Get overall rating statistics for a report"""
-        # Get average rating and total ratings
+        # Get average rating and total ratings for the report
         query = """
             SELECT
                 COALESCE(AVG(rating), 0) as average_rating,
@@ -276,7 +425,7 @@ class ReportsDAO:
             WHERE id = %s AND rating IS NOT NULL
         """
 
-        # Get rating distribution
+        # Get rating distribution (though likely always 0 or 1 row because rating stored on report row)
         distribution_query = """
             SELECT
                 rating,
@@ -296,7 +445,6 @@ class ReportsDAO:
             cur.execute(distribution_query, (report_id,))
             distribution_results = cur.fetchall()
 
-            # Build distribution dictionary
             distribution = {}
             for rating, count in distribution_results:
                 distribution[str(rating)] = count
@@ -313,12 +461,15 @@ class ReportsDAO:
     def get_reports_by_user(self, user_id: int, limit: int, offset: int, sort: str | None = None):
         order_dir = _normalize_sort(sort)
         query = f"""
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
+            SELECT reports.id, reports.title, reports.description, reports.status, reports.category,
+                   reports.created_by, reports.validated_by, reports.resolved_by,
+                   reports.created_at, reports.resolved_at,
+                   reports.location, location.city AS location_city,
+                   reports.image_url, reports.rating
             FROM reports
-            WHERE created_by = %s
-            ORDER BY created_at {order_dir}, id {order_dir}
+            LEFT JOIN location ON reports.location = location.id
+            WHERE reports.created_by = %s
+            ORDER BY reports.created_at {order_dir}, reports.id {order_dir}
             LIMIT %s OFFSET %s
         """
         with self.conn.cursor() as cur:
@@ -392,9 +543,11 @@ class ReportsDAO:
 
     def get_admin_dashboard(self):
         recent_reports_query = """
-            SELECT id, title, status, category, created_at
+            SELECT reports.id, reports.title, reports.status, reports.category, reports.created_at,
+                   location.city AS location_city
             FROM reports
-            ORDER BY created_at DESC
+            LEFT JOIN location ON reports.location = location.id
+            ORDER BY reports.created_at DESC
             LIMIT 10
         """
         category_stats_query = """
@@ -415,7 +568,14 @@ class ReportsDAO:
 
             return {
                 "recent_reports": [
-                    {"id": r[0], "title": r[1], "status": r[2], "category": r[3], "created_at": r[4]}
+                    {
+                        "id": r[0],
+                        "title": r[1],
+                        "status": r[2],
+                        "category": r[3],
+                        "created_at": r[4],
+                        "location_city": r[5],
+                    }
                     for r in recent_reports
                 ],
                 "category_stats": [{"category": s[0], "total": s[1], "resolved": s[2]} for s in category_stats],
@@ -428,12 +588,15 @@ class ReportsDAO:
     def get_pending_reports(self, limit: int, offset: int, sort: str | None = None):
         order_dir = _normalize_sort(sort)
         query = f"""
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
+            SELECT reports.id, reports.title, reports.description, reports.status, reports.category,
+                   reports.created_by, reports.validated_by, reports.resolved_by,
+                   reports.created_at, reports.resolved_at,
+                   reports.location, location.city AS location_city,
+                   reports.image_url, reports.rating
             FROM reports
-            WHERE status = 'open'
-            ORDER BY created_at {order_dir}, id {order_dir}
+            LEFT JOIN location ON reports.location = location.id
+            WHERE reports.status = 'open'
+            ORDER BY reports.created_at {order_dir}, reports.id {order_dir}
             LIMIT %s OFFSET %s
         """
         with self.conn.cursor() as cur:
@@ -449,12 +612,15 @@ class ReportsDAO:
     def get_assigned_reports(self, admin_id: int, limit: int, offset: int, sort: str | None = None):
         order_dir = _normalize_sort(sort)
         query = f"""
-            SELECT id, title, description, status, category, created_by,
-                   validated_by, resolved_by, created_at, resolved_at,
-                   location, image_url, rating
+            SELECT reports.id, reports.title, reports.description, reports.status, reports.category,
+                   reports.created_by, reports.validated_by, reports.resolved_by,
+                   reports.created_at, reports.resolved_at,
+                   reports.location, location.city AS location_city,
+                   reports.image_url, reports.rating
             FROM reports
-            WHERE (validated_by = %s OR resolved_by = %s) AND status != 'resolved'
-            ORDER BY created_at {order_dir}, id {order_dir}
+            LEFT JOIN location ON reports.location = location.id
+            WHERE (reports.validated_by = %s OR reports.resolved_by = %s) AND reports.status != 'resolved'
+            ORDER BY reports.created_at {order_dir}, reports.id {order_dir}
             LIMIT %s OFFSET %s
         """
         with self.conn.cursor() as cur:

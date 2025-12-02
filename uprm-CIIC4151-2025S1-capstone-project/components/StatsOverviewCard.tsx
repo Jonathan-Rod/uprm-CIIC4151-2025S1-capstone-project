@@ -1,3 +1,4 @@
+// TODO REfactor to look similar as ReportStats displaying the all status numbers
 import { Card, Text } from "react-native-paper";
 import { StyleSheet, View } from "react-native";
 import { useAppColors } from "@/hooks/useAppColors";

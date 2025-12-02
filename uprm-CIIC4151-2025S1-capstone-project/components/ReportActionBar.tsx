@@ -39,7 +39,7 @@ export const ReportActionBar = ({
   const isAdmin = user?.isAdmin;
 
   // Permission checks
-  const canEdit = isAuthor;
+  const canEdit = false; //isAuthor;
   const canChangeStatus = isAdmin;
   const canPin = !!user && !isPinning;
   const canRate = !!user && !isRating;

@@ -207,12 +207,13 @@ export const ReportDetails = ({ report, ratingCount }: ReportDetailsProps) => {
           </View>
         </View>
         <Chip
-          mode="outlined"
-          style={[styles.statusChip, { backgroundColor: getStatusColor(report.status) }]}
-          textStyle={styles.statusText}
-        >
-          {report.status.replace("_", " ")}
-        </Chip>
+  mode="outlined"
+  style={[styles.statusChip, { backgroundColor: getStatusColor(report.status) }]}
+  textStyle={styles.statusText}
+>
+  {" "} {/* just empty space, or use an icon */}
+</Chip>
+
       </View>
 
       {/* Title and Category */}

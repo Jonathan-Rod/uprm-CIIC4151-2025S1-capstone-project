@@ -1,3 +1,6 @@
+// TODO We need to refactor the display of message to properly get
+// handle success
+
 import { useAppColors } from "@/hooks/useAppColors";
 import { login } from "@/utils/api";
 import { saveCredentials } from "@/utils/auth";
@@ -38,12 +41,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       } else {
         const errorMsg = response.error_msg || "Invalid credentials";
         setErrorMessage(errorMsg);
-        Alert.alert("Login Failed", errorMsg);
+        // Alert.alert("Login Failed", errorMsg);
       }
     } catch (error: any) {
       const message = error.message || "Network error. Please try again.";
       setErrorMessage(message);
-      Alert.alert("Login Error", message);
+      // Alert.alert("Login Error", message);
     } finally {
       setLoading(false);
     }

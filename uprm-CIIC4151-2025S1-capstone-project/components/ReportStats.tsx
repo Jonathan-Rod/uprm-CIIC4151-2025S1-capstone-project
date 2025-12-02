@@ -1,3 +1,4 @@
+// TODO REfactor to ReportStats displaying the all status numbers
 import { StyleSheet, View } from "react-native";
 import { Text, Card, Icon } from "react-native-paper";
 import type { ReportStatsProps } from "@/types/interfaces";
@@ -34,7 +35,7 @@ export default function ReportStats({
       color: "#9C27B0",
     },
   ];
-
+  // TODO Do a better rate assigning points to each status and then calculate the resolutation rate based on the total points
   const resolutionRate = filed > 0 ? Math.round((resolved / filed) * 100) : 0;
 
   const styles = createStyles(colors);
